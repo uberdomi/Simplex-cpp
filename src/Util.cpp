@@ -33,6 +33,16 @@ bool util::isEqual(const matrix& A, const matrix& B, const double& tol){
     return true;
 }
 
+bool util::checkRectangular(const matrix& A){
+    size_t n = A.at(0).size();
+    for(const util::vec& row : A) {
+        if(row.size() != n) {
+            return false;
+        }
+    }
+    return true;
+}
+
 // v * sf
 void util::scaleRow(vec& v, const double& sf) {
     for(double& val : v){
@@ -52,11 +62,11 @@ void util::subtractRow(vec& v, const vec& w, const double& sf) {
 }
 
 void util::print(const vec& v) {
-    std::cout << "{ ";
+    std::cout << "[ ";
     for (const double& val : v) {
         std::cout << val << ", ";
     }
-    std::cout << "}" << std::endl;
+    std::cout << "]" << std::endl;
 }
 
 

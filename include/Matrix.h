@@ -15,22 +15,27 @@ class Matrix {
         eye, ones, zeros
     };
 
-    Matrix(util::matrix A);
+    Matrix(const util::matrix& A);
     Matrix(InitType type, size_t dim);
 
-    util::vec mult(util::vec v); // A*v
-    util::vec multT(util::vec v); // A^t*v
-    std::unique_ptr<Matrix> mult(util::matrix B); // A*B
-    std::unique_ptr<Matrix> T(); // A^t
-    util::vec solve(util::vec v); // A^(-1)*v
-    std::unique_ptr<Matrix> inv(); // A^(-1)
-    double det(); // det(A)
-    util::matrix getMatrix(); // A
+    util::vec mult(const util::vec& v) const ; // A*v
+    util::vec multT(const util::vec& v) const ; // A^t*v
+
+    std::unique_ptr<Matrix> mult(const util::matrix& B) const ; // A*B
+    std::unique_ptr<Matrix> mult(const Matrix& B) const ; // A*B
+
+    std::unique_ptr<Matrix> T() const ; // A^t
+    util::vec solve(const util::vec& v) const ; // A^(-1)*v
+    std::unique_ptr<Matrix> inv() const ; // A^(-1)
+    double det() const ; // det(A)
+    util::matrix getMatrix() const ; // A
+
+    void print() const;
 
     private:
     static util::matrix initMatrix(InitType type, size_t dim);
 
-    std::pair<double, util::matrix> gauss(); // perform the gauss algorithm, getting det. and inv. together
+    std::pair<double, util::matrix> gauss() const ; // perform the gauss algorithm, getting det. and inv. together
 
 };
 

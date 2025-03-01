@@ -11,6 +11,8 @@ namespace util {
     bool isEqual(const vec& v, const vec& w, const double& tol=1e-6);
     bool isEqual(const matrix& A, const matrix& B, const double& tol=1e-6);
 
+    bool checkRectangular(const matrix& A);
+
     void scaleRow(vec& v, const double& sf);
     void subtractRow(vec& v, const vec& w, const double& sf=1.0);
 
