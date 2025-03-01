@@ -1,3 +1,6 @@
+#ifndef _MATRIX
+#define _MATRIX
+
 #include "Util.h"
 #include <memory>
 
@@ -27,3 +30,5 @@ class Matrix {
     std::pair<double, util::matrix> gauss(); // perform the gauss algorithm, getting det. and inv. together
 
 };
+
+#endif // _MATRIX

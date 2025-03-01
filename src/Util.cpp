@@ -7,7 +7,7 @@ bool util::isEqual(const double& x, const double& y, const double& tol) {
     return std::abs(x-y) < tol;
 }
 
-bool util::isEqual(const vec& v, const vec& w, const double& tol=1e-6){
+bool util::isEqual(const vec& v, const vec& w, const double& tol){
     int n = v.size();
     if(w.size() != n) {
         return false;
@@ -20,7 +20,7 @@ bool util::isEqual(const vec& v, const vec& w, const double& tol=1e-6){
     return true;
 }
 
-bool util::isEqual(const matrix& A, const matrix& B, const double& tol=1e-6){
+bool util::isEqual(const matrix& A, const matrix& B, const double& tol){
     int n = A.size();
     if(B.size() != n) {
         return false;
@@ -34,14 +34,14 @@ bool util::isEqual(const matrix& A, const matrix& B, const double& tol=1e-6){
 }
 
 // v * sf
-void util::scaleRow(vec& v, double sf) {
+void util::scaleRow(vec& v, const double& sf) {
     for(double& val : v){
         val *= sf;
     }
 }
 
 // v - w * sf
-void util::subtractRow(vec& v, vec& w, double sf) {
+void util::subtractRow(vec& v, const vec& w, const double& sf) {
     if(v.size() != w.size()) {
         throw std::invalid_argument("Vectors have different lengths");
     }
@@ -61,10 +61,9 @@ void util::print(const vec& v) {
 
 
 void util::print(const matrix& A) {
-    std::cout << "{ ";
+    std::cout << "{" << std::endl;
     for (const vec& v : A) {
         print(v);
-        std::cout << std::endl;
     }
     std::cout << "}" << std::endl;
 }
