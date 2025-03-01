@@ -6,16 +6,17 @@
 
 class Matrix {
     private:
-    util::matrix _A; // Immutable
-    int _n,_m;
+    // Immutable
+    const util::matrix _A;
+    const size_t _n,_m;
 
     public:
-    enum type{
-        eye, ones, zero
+    enum InitType{
+        eye, ones, zeros
     };
 
     Matrix(util::matrix A);
-    Matrix(type, int dim);
+    Matrix(InitType type, size_t dim);
 
     util::vec mult(util::vec v); // A*v
     util::vec multT(util::vec v); // A^t*v
@@ -27,6 +28,8 @@ class Matrix {
     util::matrix getMatrix(); // A
 
     private:
+    static util::matrix initMatrix(InitType type, size_t dim);
+
     std::pair<double, util::matrix> gauss(); // perform the gauss algorithm, getting det. and inv. together
 
 };
