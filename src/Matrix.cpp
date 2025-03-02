@@ -180,6 +180,7 @@ Matrix Matrix::T() const {
 }
 
 Matrix Matrix::inv() {
+    // TODO adjust when matrix changed
     if(_A_inv.empty()) {
         auto [det, Ainv] = gauss(util::eye(_n));
         _A_inv = Ainv;
@@ -193,6 +194,7 @@ Matrix Matrix::inv() {
 }
 
 double Matrix::det() {
+    // TODO adjust when matrix changed
     if(_A_inv.empty()) {
         auto [det, Ainv] = gauss(util::eye(_n));
         _A_inv = Ainv;

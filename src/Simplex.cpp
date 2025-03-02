@@ -154,7 +154,8 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(){
         std::cout << "-- q --" << std::endl;
         std::cout << q << std::endl;
 
-        d = A_B_t.T().solve(A_N_t.getRow(0));
+        Matrix A_B = A_B_t.T();
+        d = A_B.solve(A_N_t.getRow(0));
         std::cout << "-- d --" << std::endl;
         util::print(d);
 
@@ -191,13 +192,17 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(){
         // p = *it;
         // Or with that
         it = std::next(B_set.begin(), p_i);  // Move iterator to the p_i-th element
+        p = *it;
 
         // Update elements
         std::cout << "-> Updating elements" << std::endl;
         util::print(x_B);
         util::print(util::scale(d, x_q));
 
-        x_B = util::add(x_B, util::scale(d, x_q));
+        // TODO make it work with a proper condition: what about the incoming index p?
+        // x_B = util::add(x_B, util::scale(d, x_q));
+        // util::print(x_B);
+        x_B = A_B.solve(_b);
 
         std::cout << "-> Swapping rows" << std::endl;
         std::cout << "p: " << p << std::endl;
@@ -214,6 +219,9 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(){
         std::swap(c_B.at(p_i), c_N.at(0));
         c_N.push_back(std::move(c_N.front()));  // Move first row to the back
         c_N.erase(c_N.begin());  // Remove the now-empty first row
+
+        // Also change basis to normal at p_i for x
+        x_B.at(p_i) = 0.0;
 
         // N: +p -q
         // B: -p +q
