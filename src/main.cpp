@@ -40,5 +40,7 @@ int main(int argc, char** argv) {
     std::cout << "--- (A + 6*I)^(-1) ---" << std::endl;
     (A + (Matrix(util::eye(3)) * 6)).inv().print();
 
+    // ----- Simplex Example -----
+
     return 0;
 }

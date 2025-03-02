@@ -31,6 +31,8 @@ namespace util {
     matrix eye(size_t n);
     matrix ones(size_t n, size_t m=0);
     matrix zeros(size_t n, size_t m=0);
+    
+    matrix t(const matrix& A);
 }
 
 #endif // _UTIL

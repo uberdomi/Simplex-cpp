@@ -176,15 +176,7 @@ Matrix Matrix::operator*(const Matrix& B) const {
 // Solving linear systems
 
 Matrix Matrix::T() const {
-    util::matrix B(_m, util::vec(_n, 0.0));
-
-    for(int i=0; i<_n; i++) {
-        for(int j=0; j<_m; j++) {
-            B.at(j).at(i) = _A.at(i).at(j);
-        }
-    }
-
-    return Matrix(std::move(B));
+    return Matrix(std::move(util::t(_A)));
 }
 
 Matrix Matrix::inv() {
