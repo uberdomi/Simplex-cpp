@@ -2,6 +2,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <iostream>
+#include <algorithm>
 
 // Comparisons
 
@@ -146,4 +147,55 @@ util::matrix util::zeros(size_t n, size_t m) {
     }
 
     return util::matrix(n, util::vec(m, 0.0));
+}
+
+util::matrix util::t(const matrix& A) {
+    util::matrix B(A.at(0).size(), util::vec(A.size(), 0.0));
+
+    for(int i=0; i<A.size(); i++) {
+        for(int j=0; j<A.at(0).size(); j++) {
+            B.at(j).at(i) = A.at(i).at(j);
+        }
+    }
+
+    return B;
+}
+
+// Vector operations
+util::vec util::add(const vec& v, const vec& w) {
+    if(v.size() != w.size()) {
+        throw std::invalid_argument("Vectors have different lengths");
+    }
+    vec result{};
+    result.reserve(v.size());
+
+    for(int i=0; i<v.size(); i++) {
+        result.at(i) = v.at(i) + w.at(i);
+    }
+
+    return result;
+}
+
+util::vec util::sub(const vec& v, const vec& w) {
+    if(v.size() != w.size()) {
+        throw std::invalid_argument("Vectors have different lengths");
+    }
+    vec result{};
+    result.reserve(v.size());
+
+    for(int i=0; i<v.size(); i++) {
+        result.at(i) = v.at(i) - w.at(i);
+    }
+
+    return result;
+}
+
+util::vec util::scale(const vec& v, const double& sf) {
+    vec result{};
+    result.reserve(v.size());
+    std::transform(v.begin(), v.end(), result.begin(), [&sf = sf](const double& val) {
+        return val*sf;
+    });
+
+    return result;
 }
