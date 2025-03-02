@@ -3,6 +3,8 @@
 #include <stdexcept>
 #include <iostream>
 
+// Comparisons
+
 bool util::isEqual(const double& x, const double& y, const double& tol) {
     return std::abs(x-y) < tol;
 }
@@ -43,6 +45,8 @@ bool util::checkRectangular(const matrix& A){
     return true;
 }
 
+// Vector manipulations
+
 // v * sf
 void util::scaleRow(vec& v, const double& sf) {
     for(double& val : v){
@@ -61,6 +65,8 @@ void util::subtractRow(vec& v, const vec& w, const double& sf) {
     }
 }
 
+// Printing
+
 void util::print(const vec& v) {
     std::cout << "[ ";
     for (const double& val : v) {
@@ -76,4 +82,30 @@ void util::print(const matrix& A) {
         print(v);
     }
     std::cout << "}" << std::endl;
+}
+
+// Conversions
+
+util::matrix util::vecAsMatrix(const vec& v){
+    util::matrix A(v.size(), util::vec(1, 0.0));
+    for (int i=0; i<v.size(); i++) {
+        A.at(i).at(0) = v.at(i);
+    }
+
+    return A;
+}
+
+util::vec util::matrixAsVec(const matrix& A) {
+    vec v(A.size(), 0.0);
+
+    for (int i=0; i<A.size(); i++) {
+        if(A.at(i).size() != 1) {
+            throw std::invalid_argument("Matrix not convertible to a vector!");
+        }
+        else {
+            v.at(i) = A.at(i).at(0);
+        }
+    }
+
+    return v;
 }
