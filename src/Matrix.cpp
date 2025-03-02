@@ -5,7 +5,7 @@ Matrix::Matrix(const util::matrix& A) :
 _A(A),
 _n{A.size()}, _m{A.at(0).size()}
 {
-    if(!util::checkRectangular(_A)){
+    if(!util::isRectangular(_A)){
         throw std::invalid_argument("Matrix is not rectangular!");
     }
 }
@@ -18,49 +18,89 @@ _A_inv(A_inv),
 _det(det)
 {}
 
-// Static constructors
+// Matrix addition
 
-Matrix Matrix::eye(size_t n) {
-    if(n <= 0){
-        throw std::invalid_argument("Matrix size must be positive");
+Matrix Matrix::add(const util::matrix& B) const {
+    if(B.size() != _n) {
+        throw std::invalid_argument("Incompatible dimensions for matrix addition!");
+    }
+    if(!util::isRectangular(B)) {
+        throw std::invalid_argument("Matrix not rectangular!");
+    }
+    if(B.at(0).size() != _m) {
+        throw std::invalid_argument("Incompatible dimensions for matrix addition!");
     }
 
-    util::matrix I(n, util::vec(n, 0.0));
+    util::matrix C = util::zeros(_n,_m);
 
-    for(int i=0; i<n; i++) {
-        I.at(i).at(i) = 1;
+    for(int i=0; i<_n; i++) {
+        for(int j=0; j<_m; j++) {
+            C.at(i).at(j) = _A.at(i).at(j) + B.at(i).at(j);
+        }
     }
 
-    return Matrix(I);
+    return Matrix(std::move(C));
 }
 
-Matrix Matrix::ones(size_t n, size_t m) {
-    if(n <= 0){
-        throw std::invalid_argument("Matrix size must be positive");
-    }
-    if(m <= 0) {
-        m = n;
-    }
-
-    util::matrix Ones(n, util::vec(m, 1.0));
-    
-    return Matrix(Ones);
+Matrix Matrix::add(const Matrix& B) const {
+    return(add(B.getMatrix()));
 }
 
-Matrix Matrix::zeros(size_t n, size_t m) {
-    if(n <= 0){
-        throw std::invalid_argument("Matrix size must be positive");
-    }
-    if(m <= 0) {
-        m = n;
-    }
-
-    util::matrix Zeros(n, util::vec(m, 0.0));
-    
-    return Matrix(Zeros);
+Matrix Matrix::operator+(const util::matrix& B) const {
+    return add(B);
 }
 
-// Matrix - vector multiplication
+Matrix Matrix::operator+(const Matrix& B) const {
+    return add(B);
+}
+
+Matrix Matrix::conc(const util::matrix& B) const {
+    if(B.size() != _n) {
+        throw std::invalid_argument("Incompatible dimensions for matrix addition!");
+    }
+    if(!util::isRectangular(B)) {
+        throw std::invalid_argument("Matrix not rectangular!");
+    }
+
+    util::matrix C = _A;
+
+    for(int i=0; i<_n; i++) {
+        C.at(i).insert(C.at(i).end(), B.at(i).begin(), B.at(i).end());  // Concatenate in-place
+    }
+
+    return Matrix(std::move(C));
+}
+
+Matrix Matrix::conc(const Matrix& B) const {
+    return(conc(B.getMatrix()));
+}
+
+Matrix Matrix::operator|(const util::matrix& B) const {
+    return conc(B);
+}
+
+Matrix Matrix::operator|(const Matrix& B) const {
+    return conc(B);
+}
+
+// Matrix scaling
+
+Matrix Matrix::scale(const double& sf) const {
+    util::matrix B = _A;
+    for(util::vec& row : B) {
+        for (double& val : row) {
+            val *= sf;
+        }
+    }
+
+    return Matrix(std::move(B));
+}
+
+Matrix Matrix::operator*(const double& sf) const {
+    return scale(sf);
+}
+
+// Matrix - Vector multiplication
 
 util::vec Matrix::mult(const util::vec& v) const {
     if(v.size() != _m) {
@@ -95,8 +135,10 @@ util::vec Matrix::multT(const util::vec& v) const {
     return b;
 }
 
+// Matrix - Matrix multiplication
+
 Matrix Matrix::mult(const util::matrix& B) const {
-    if(!util::checkRectangular(B)) {
+    if(!util::isRectangular(B)) {
         throw std::invalid_argument("Matrix is not rectangular!");
     }
     if(_m != B.size()) {
@@ -112,7 +154,7 @@ Matrix Matrix::mult(const util::matrix& B) const {
             }
         }
     }
-    return Matrix(C);
+    return Matrix(std::move(C));
 }
 
 Matrix Matrix::mult(const Matrix& B) const {
@@ -147,7 +189,7 @@ Matrix Matrix::T() const {
 
 Matrix Matrix::inv() {
     if(_A_inv.empty()) {
-        auto [det, Ainv] = gauss(eye(_n).getMatrix());
+        auto [det, Ainv] = gauss(util::eye(_n));
         _A_inv = Ainv;
         _det = det;
     }
@@ -160,7 +202,7 @@ Matrix Matrix::inv() {
 
 double Matrix::det() {
     if(_A_inv.empty()) {
-        auto [det, Ainv] = gauss(eye(_n).getMatrix());
+        auto [det, Ainv] = gauss(util::eye(_n));
         _A_inv = Ainv;
         _det = det;
     }
@@ -170,7 +212,7 @@ double Matrix::det() {
 
 util::vec Matrix::solve(const util::vec& v) const {
     auto [det, Ainv_v] = gauss(v);
-    return util::matrixAsVec(Ainv_v);
+    return util::matrixAsVec(std::move(Ainv_v));
 }
 
 util::vec Matrix::operator/(const util::vec& v) const {

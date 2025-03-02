@@ -23,12 +23,22 @@ int main(int argc, char** argv) {
     std::cout << "--- B^(-1)*v = A*v ---" << std::endl;
     util::print(B / util::vec{1,1,1});
 
-    size_t n{4};
-    Matrix Ones = Matrix::ones(n);
+    Matrix Ones = Matrix(util::ones(3));
 
+    std::cout << "--- 1_3x3 * 1_3x3 ---" << std::endl;
     Ones.mult(Ones).print();
 
-    // Ones.inv().print();
+    std::cout << "--- A + 1_3x3 ---" << std::endl;
+    (A + Ones).print();
+
+    std::cout << "--- A | 1_3x3 ---" << std::endl;
+    (A | Ones).print();
+
+    std::cout << "--- A + 6*I ---" << std::endl;
+    (A + (Matrix(util::eye(3)) * 6)).print();
+
+    std::cout << "--- (A + 6*I)^(-1) ---" << std::endl;
+    (A + (Matrix(util::eye(3)) * 6)).inv().print();
 
     return 0;
 }

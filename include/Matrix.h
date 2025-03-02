@@ -23,16 +23,33 @@ class Matrix {
 
     Matrix(const util::matrix& A);
 
-    // Static constructors
+    // Matrix addition
 
-    static Matrix eye(size_t n);
-    static Matrix ones(size_t n, size_t m=0);
-    static Matrix zeros(size_t n, size_t m=0);
+    Matrix add(const util::matrix& B) const ; // A+B
+    Matrix add(const Matrix& B) const ; // A+B
 
-    // Matrix - vector multiplication
+    Matrix operator+(const util::matrix& B) const ; // A+B
+    Matrix operator+(const Matrix& B) const ; // A+B
+
+    // Matrix concatenation
+
+    Matrix conc(const util::matrix& B) const ; // [A | B]
+    Matrix conc(const Matrix& B) const ; // [A | B]
+
+    Matrix operator|(const util::matrix& B) const ; // [A | B]
+    Matrix operator|(const Matrix& B) const ; // [A | B]
+
+    // Matrix scaling
+
+    Matrix scale(const double& sf) const ; // sf * A
+    Matrix operator*(const double& sf) const ; // sf * A
+
+    // Matrix - Vector multiplication
 
     util::vec mult(const util::vec& v) const ; // A*v
     util::vec multT(const util::vec& v) const ; // A^t*v
+
+    // Matrix - Matrix multiplication
 
     Matrix mult(const util::matrix& B) const ; // A*B
     Matrix mult(const Matrix& B) const ; // A*B
