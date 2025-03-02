@@ -13,7 +13,7 @@ namespace util {
     bool isEqual(const vec& v, const vec& w, const double& tol=1e-6);
     bool isEqual(const matrix& A, const matrix& B, const double& tol=1e-6);
 
-    bool checkRectangular(const matrix& A);
+    bool isRectangular(const matrix& A);
 
     // Vector manipulations
     void scaleRow(vec& v, const double& sf);
@@ -26,6 +26,11 @@ namespace util {
     // Conversions
     matrix vecAsMatrix(const vec& v);
     vec matrixAsVec(const matrix& A);
+
+    // Common matrices
+    matrix eye(size_t n);
+    matrix ones(size_t n, size_t m=0);
+    matrix zeros(size_t n, size_t m=0);
 }
 
 #endif // _UTIL

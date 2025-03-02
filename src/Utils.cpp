@@ -35,7 +35,7 @@ bool util::isEqual(const matrix& A, const matrix& B, const double& tol){
     return true;
 }
 
-bool util::checkRectangular(const matrix& A){
+bool util::isRectangular(const matrix& A){
     size_t n = A.at(0).size();
     for(const util::vec& row : A) {
         if(row.size() != n) {
@@ -108,4 +108,42 @@ util::vec util::matrixAsVec(const matrix& A) {
     }
 
     return v;
+}
+
+// Common matrices
+
+util::matrix util::eye(size_t n) {
+    if(n <= 0){
+        throw std::invalid_argument("Matrix size must be positive");
+    }
+
+    util::matrix I(n, util::vec(n, 0.0));
+
+    for(int i=0; i<n; i++) {
+        I.at(i).at(i) = 1;
+    }
+
+    return I;
+}
+
+util::matrix util::ones(size_t n, size_t m) {
+    if(n <= 0){
+        throw std::invalid_argument("Matrix size must be positive");
+    }
+    if(m <= 0) {
+        m = n;
+    }
+
+    return util::matrix(n, util::vec(m, 1.0));
+}
+
+util::matrix util::zeros(size_t n, size_t m) {
+    if(n <= 0){
+        throw std::invalid_argument("Matrix size must be positive");
+    }
+    if(m <= 0) {
+        m = n;
+    }
+
+    return util::matrix(n, util::vec(m, 0.0));
 }
