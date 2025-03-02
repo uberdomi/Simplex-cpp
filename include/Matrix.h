@@ -14,6 +14,9 @@ class Matrix {
     util::matrix _A_inv{};
     double _det{0.0};
 
+    // Construct matrix with its inverse
+    Matrix(util::matrix&& A, const util::matrix& A_inv, double&& det);
+
     public:
 
     // Constructor
@@ -34,12 +37,17 @@ class Matrix {
     Matrix mult(const util::matrix& B) const ; // A*B
     Matrix mult(const Matrix& B) const ; // A*B
 
+    util::vec operator*(const util::vec& v) const ; // A*v
+    Matrix operator*(const util::matrix& B) const ; // A*B
+    Matrix operator*(const Matrix& B) const ; // A*B
+
     // Solving linear systems
 
     Matrix T() const ; // A^t
     Matrix inv(); // A^(-1)
     double det(); // det(A)
     util::vec solve(const util::vec& v) const ; // A^(-1)*v
+    util::vec operator/(const util::vec& v) const ; // A^(-1)*v
 
     // Helper functions
 

@@ -1,6 +1,5 @@
 #include "Matrix.h"
 #include <stdexcept>
-#include <iostream>
 
 Matrix::Matrix(const util::matrix& A) :
 _A(A),
@@ -10,6 +9,14 @@ _n{A.size()}, _m{A.at(0).size()}
         throw std::invalid_argument("Matrix is not rectangular!");
     }
 }
+
+// Construct matrix with its inverse
+Matrix::Matrix(util::matrix&& A, const util::matrix& A_inv, double&& det) :
+_A(A),
+_n{A.size()}, _m{A.at(0).size()},
+_A_inv(A_inv),
+_det(det)
+{}
 
 // Static constructors
 
@@ -112,6 +119,18 @@ Matrix Matrix::mult(const Matrix& B) const {
     return mult(B.getMatrix());
 }
 
+util::vec Matrix::operator*(const util::vec& v) const {
+    return mult(v);
+}
+
+Matrix Matrix::operator*(const util::matrix& B) const {
+    return mult(B);
+}
+
+Matrix Matrix::operator*(const Matrix& B) const {
+    return mult(B);
+}
+
 // Solving linear systems
 
 Matrix Matrix::T() const {
@@ -123,7 +142,7 @@ Matrix Matrix::T() const {
         }
     }
 
-    return Matrix(B);
+    return Matrix(std::move(B));
 }
 
 Matrix Matrix::inv() {
@@ -136,7 +155,7 @@ Matrix Matrix::inv() {
         throw std::runtime_error("Matrix not invertible!");
     }
 
-    return Matrix(_A_inv);
+    return Matrix(std::move(_A_inv), _A, 1 / _det);
 }
 
 double Matrix::det() {
@@ -154,6 +173,12 @@ util::vec Matrix::solve(const util::vec& v) const {
     return util::matrixAsVec(Ainv_v);
 }
 
+util::vec Matrix::operator/(const util::vec& v) const {
+    return solve(v);
+}
+
+// Helper functions
+
 util::matrix Matrix::getMatrix() const {
     return _A;
 }
@@ -164,10 +189,10 @@ void Matrix::print() const {
 
 std::pair<double, util::matrix> Matrix::gauss(util::matrix&& RHS) const {
 
-    // TODO remove printing
-    std::cout << "--- Inverting/Solving with matrix: ---" << std::endl;
-    util::print(_A);
-    std::cout << "-------------------------" << std::endl;
+    // // TODO remove printing
+    // std::cout << "--- Inverting/Solving with matrix: ---" << std::endl;
+    // util::print(_A);
+    // std::cout << "-------------------------" << std::endl;
 
     double det = 1.0;
     util::matrix LHS = _A;
@@ -221,12 +246,12 @@ std::pair<double, util::matrix> Matrix::gauss(util::matrix&& RHS) const {
         }
         // --- End Scaling and Subtracting
         
-        // TODO remove printing
-        std::cout << "------------ LHS -------------" << std::endl;
-        util::print(LHS);
-        std::cout << "------------ RHS -------------" << std::endl;
-        util::print(RHS);
-        std::cout << "-------------------------" << std::endl;
+        // // TODO remove printing
+        // std::cout << "------------ LHS -------------" << std::endl;
+        // util::print(LHS);
+        // std::cout << "------------ RHS -------------" << std::endl;
+        // util::print(RHS);
+        // std::cout << "-------------------------" << std::endl;
     }
 
     // --- Start Cleanup
@@ -239,12 +264,12 @@ std::pair<double, util::matrix> Matrix::gauss(util::matrix&& RHS) const {
             util::subtractRow(RHS.at(j), RHS.at(i), tmp);
             j--;
         }
-        // TODO remove printing
-        std::cout << "------------ LHS -------------" << std::endl;
-        util::print(LHS);
-        std::cout << "------------ RHS -------------" << std::endl;
-        util::print(RHS);
-        std::cout << "-------------------------" << std::endl;
+        // // TODO remove printing
+        // std::cout << "------------ LHS -------------" << std::endl;
+        // util::print(LHS);
+        // std::cout << "------------ RHS -------------" << std::endl;
+        // util::print(RHS);
+        // std::cout << "-------------------------" << std::endl;
     }
     // --- End Cleanup
 
