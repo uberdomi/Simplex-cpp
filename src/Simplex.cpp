@@ -52,6 +52,8 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(){
         throw std::runtime_error("Optimization system invalid!");
     }
 
+    int maxiter = 1000;
+
     // -- Problem formulation
     // min c^t*x s.t. Ax=b, x>=0 -> Algorithm for this form
     // -> For now default formulation Ax<=b and we add slack variables
@@ -59,7 +61,7 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(){
     // 0) [later] Find feasible point
     // for now assume [0, ..., 0, b^t] is the initial *feasible* point
     
-    // --- Initial setting ---
+    // --- Start Initial setting
     int m = _b.size();
     int n = _c.size();
 
@@ -92,11 +94,20 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(){
     double x_q{0.0};
 
     util::vec lambda{};
+    // --- End Initial setting
+
+    for(int iter=0; iter<maxiter; iter++) {
+
     // Iteration calculations
     lambda = A_B_t.solve(c_B);
     s_N = util::sub(c_N, A_N_t * lambda);
     // TODO check s_N optimality
-    // TODO return x corresponding to B and N
+    if(std::all_of(s_N.begin(), s_N.end(), [](const double& val) {
+        return val >= 0;
+    })) {
+        // TODO return x corresponding to B and N
+        return {discardSlack(x_B,B_set), optimal};
+    }
 
     // --- Start Pivot
     // Pick indices to be swapped away
@@ -119,24 +130,53 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(){
             }
         }
     }
-    // Get the p_i'th element of the list
-    it = B_set.begin();
-    std::advance(it, p_i);
-    p = *it;
+    if(util::isEqual(x_q, -1.0)) {
+        // TODO check d condition
+        // <=> d <= 0 -> unbounded
+        return {discardSlack(x_B,B_set), unbounded};
+    }
+
+    // // Get the p_i'th element of the list
+    // it = B_set.begin();
+    // std::advance(it, p_i);
+    // p = *it;
+    // Or with that
+    it = std::next(B_set.begin(), p_i);  // Move iterator to the p_i-th element
 
     // Update elements
     x_B = util::add(x_B, util::scale(d, x_q));
 
     // TODO swap indices q, p from N, B resp.
+    // From A_N we always pop from the top
+    // In A_B we explicitly found the index p_i to replace the row with the row from A_N
+    Matrix::swapRows(A_N_t, A_B_t, 0, p_i);
+    // Newly swapped-out row emplaced back
+    A_N_t.swapToBack(0);
+
+    // N: +p -q
+    // B: -p +q
+    N_set.pop();
+    N_set.push(p);
+    *it = q;
 
     // --- End Pivot
 
-    // Printing steps
+    // --- Start Printing
+    std::cout << "----- A_B_t -----" << std::endl;
+    A_B_t.print();
+    std::cout << "----- A_N_t -----" << std::endl;
+    A_N_t.print();
+    std::cout << "----- x_B -----" << std::endl;
+    util::print(x_B);
+    std::cout << "----------" << std::endl;
+    // --- End Printing
 
-
+    }
+    
+    throw std::runtime_error("Max. iter count reached and no solution!");
 }
 
-// System validation
+// Helper functions
 
 bool Simplex::validSystem() const {
     if(!util::isRectangular(_A)) {
@@ -151,4 +191,16 @@ bool Simplex::validSystem() const {
     }
 
     return true;
+}
+
+util::vec Simplex::discardSlack(const util::vec& x_B, const std::list<int>& B_set){
+    int n = x_B.size();
+    util::vec x(n, 0.0);
+    for(const int& i : B_set) {
+        if(i < n) {
+            x.at(i) = x_B.at(i);
+        }
+    }
+
+    return x;
 }

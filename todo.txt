@@ -20,7 +20,7 @@ KKT conditions:
 - [later] improve efficiency
 1) l = A_B^(-t)*c_B
 2) s_N = c_N - A_N^t*l
-- if s_N >= -> optimal (KKT sufficient)
+- if s_N >= 0 -> optimal (KKT sufficient)
 3) Pivot: swap a column of A_N with a column of A_B - (?) just pick any? - prolly good to keep N as a queue
 - changes B and N by one entry
 - goes to a new vertex with a *smaller objective value*

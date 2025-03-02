@@ -221,6 +221,15 @@ util::vec Matrix::getRow(const int& i) const {
     return _A.at(i);
 }
 
+void Matrix::swapRows(Matrix& A, Matrix& B, const int& i, const int& j) {
+    std::swap(A._A.at(i), B._A.at(j));
+}
+
+void Matrix::swapToBack(const int& i) {
+    _A.push_back(std::move(_A.front())); // Move first row to the back
+    _A.erase(_A.begin()); // Remove the now-empty first row
+}
+
 void Matrix::print() const {
     util::print(_A);
 }

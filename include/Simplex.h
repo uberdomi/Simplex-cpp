@@ -1,6 +1,7 @@
 #ifndef _SIMPLEX
 #define _SIMPLEX
 
+#include <list>
 #include "Utils.h"
 
 class Simplex {
@@ -34,10 +35,10 @@ class Simplex {
     std::pair<util::vec, Status> solve();
 
     private:
-    // System validation
+    // Helper functions
     bool validSystem() const;
 
-    // Helper functions
+    static util::vec discardSlack(const util::vec& x_B, const std::list<int>& B_set);
 
 };
 
