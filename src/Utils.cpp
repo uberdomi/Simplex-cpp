@@ -166,8 +166,7 @@ util::vec util::add(const vec& v, const vec& w) {
     if(v.size() != w.size()) {
         throw std::invalid_argument("Vectors have different lengths");
     }
-    vec result{};
-    result.reserve(v.size());
+    vec result(v.size(), 0.0);
 
     for(int i=0; i<v.size(); i++) {
         result.at(i) = v.at(i) + w.at(i);
@@ -180,8 +179,7 @@ util::vec util::sub(const vec& v, const vec& w) {
     if(v.size() != w.size()) {
         throw std::invalid_argument("Vectors have different lengths");
     }
-    vec result{};
-    result.reserve(v.size());
+    vec result(v.size(), 0.0);
 
     for(int i=0; i<v.size(); i++) {
         result.at(i) = v.at(i) - w.at(i);
@@ -191,11 +189,12 @@ util::vec util::sub(const vec& v, const vec& w) {
 }
 
 util::vec util::scale(const vec& v, const double& sf) {
-    vec result{};
+    vec result(v.size(), 0.0);
     result.reserve(v.size());
-    std::transform(v.begin(), v.end(), result.begin(), [&sf = sf](const double& val) {
-        return val*sf;
-    });
+
+    for(int i=0; i<v.size(); i++) {
+        result.at(i) = v.at(i)*sf;
+    }
 
     return result;
 }

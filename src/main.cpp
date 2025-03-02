@@ -1,5 +1,6 @@
 #include "Utils.h"
 #include "Matrix.h"
+#include "Simplex.h"
 #include <iostream>
 
 int main(int argc, char** argv) {
@@ -42,6 +43,17 @@ int main(int argc, char** argv) {
 
     // ----- Simplex Example -----
     std::cout << "----- Simplex Example -----" << std::endl;
+
+    util::matrix A0{{1,3}, {1,1}, {3,1}};
+    util::vec b0{15,7,15};
+    util::vec c0{1,2};
+    // Considering the LP min(x) c^t*x s.t. A*x<=0, x>=0
+    Simplex model{};
+    model.addConstraints(A0,b0);
+    model.setMaximization(c0);
+    auto [vertex, status] = model.solve();
+
+    util::print(vertex);
 
     return 0;
 }
