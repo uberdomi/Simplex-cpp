@@ -19,18 +19,25 @@ class Simplex {
         optimal, infeasible, unbounded
     };
 
+    // Constraints
+
     void addConstraint(const util::vec& coefficients, double rhs);
     void addConstraints(const util::matrix& coefficients, const util::vec& rhs);
+
+    // Objective
 
     void setMinimization(const util::vec& objective);
     void setMaximization(const util::vec& objective);
 
+    // Solving
+
     std::pair<util::vec, Status> solve();
 
     private:
+    // System validation
     bool validSystem() const;
-    bool validConstraints() const;
-    bool validObjective() const;
+
+    // Helper functions
 
 };
 
