@@ -6,8 +6,8 @@
 
 class Matrix {
     private:
-    // Immutable
-    const util::matrix _A;
+    // Immutable - stupid, let's make it changeable
+    util::matrix _A;
     const size_t _n,_m;
 
     // Can be updated
@@ -69,6 +69,7 @@ class Matrix {
     // Helper functions
 
     util::matrix getMatrix() const ; // A
+    util::vec getRow(const int& i) const ; // A_i
 
     void print() const;
 

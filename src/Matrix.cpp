@@ -217,6 +217,10 @@ util::matrix Matrix::getMatrix() const {
     return _A;
 }
 
+util::vec Matrix::getRow(const int& i) const {
+    return _A.at(i);
+}
+
 void Matrix::print() const {
     util::print(_A);
 }
