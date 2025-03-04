@@ -99,6 +99,8 @@ std::pair<std::pair<util::vec, util::vec>, Simplex::Status> Simplex::solve(){
     std::cout << "----- A_N_t -----" << std::endl;
     A_N_t.print();
 
+    Matrix A_inv = A_B_t.inv();
+
     util::vec c_N = _c;
     util::vec c_B(m, 0.0);
 
@@ -127,6 +129,8 @@ std::pair<std::pair<util::vec, util::vec>, Simplex::Status> Simplex::solve(){
         A_B_t.print();
         std::cout << "----- A_N_t -----" << std::endl;
         A_N_t.print();
+        std::cout << "----- A_inv -----" << std::endl;
+        A_inv.print();
         std::cout << "----- x_B -----" << std::endl;
         util::print(x_B);
         std::cout << "----- s_N -----" << std::endl;
@@ -168,7 +172,9 @@ std::pair<std::pair<util::vec, util::vec>, Simplex::Status> Simplex::solve(){
         // --- Start Pivot
         // i_N: N -> B
 
-        d = A_B_t.T().solve(A_N_t.getRow(i_N));
+        d = A_inv * A_N_t.getRow(i_N);
+        // d = A_B_t.T().solve(A_N_t.getRow(i_N));
+
         std::cout << "-- d --" << std::endl;
         util::print(d);
 
@@ -207,8 +213,15 @@ std::pair<std::pair<util::vec, util::vec>, Simplex::Status> Simplex::solve(){
         x_B.at(i_B) = x_pivot;
         
         std::cout << "-> Indices to be swapped" << std::endl;
-        std::cout << "q: " << N_set.at(i_N) << ": N -> B " << std::endl;
-        std::cout << "p: " << B_set.at(i_B) << ": B -> N " << std::endl;
+        std::cout << N_set.at(i_N) << ": N -> B " << std::endl;
+        std::cout << B_set.at(i_B) << ": B -> N " << std::endl;
+
+        // Sherman-Morrison update for A_inv
+        // u = A_N.i_N - A_B.i_B
+        // v = [0 ... 1 ... 0], at i_B-th entry
+        util::vec v(m, 0.0);
+        v.at(i_B) = 1.0;
+        A_inv = std::move(A_inv.ShermanMorrison(util::sub(A_N_t.getRow(i_N), A_B_t.getRow(i_B)), v));
 
         // Sets/structures affected:
         // N <-> B

@@ -1,5 +1,6 @@
 #include "Matrix.h"
 #include <stdexcept>
+#include <iostream>
 
 Matrix::Matrix(const util::matrix& A) :
 _A(A),
@@ -211,6 +212,22 @@ util::vec Matrix::solve(const util::vec& v) const {
 
 util::vec Matrix::operator/(const util::vec& v) const {
     return solve(v);
+}
+
+Matrix Matrix::ShermanMorrison(const util::vec& u, const util::vec& v) {
+    // B = A + u*v^t
+    // => B^(-1) = A^(-1) - (A^(-1) * u * v^t * A^(-1))/(1 + v^t * A^(-1) * u)
+    // We're already the A^(-1)
+    double denom = 1 + util::dot(v, mult(u)); // (1 + v^t * A^(-1) * u)
+    if(util::isEqual(denom, 0.0)) {
+        throw std::runtime_error("Updated matrix not invertible!");
+    }
+    double sf = -1/denom; // -1/(1 + v^t * A^(-1) * u)
+    // A^(-1) * u
+    // -> - (A^(-1) * u)/(1 + v^t * A^(-1) * u)
+    // -> - (A^(-1) * u * v^t * A^(-1))/(1 + v^t * A^(-1) * u)
+    // -> B^(-1) = A^(-1) - (A^(-1) * u * v^t * A^(-1))/(1 + v^t * A^(-1) * u)
+    return(add(util::dyadic(util::scale(mult(u), sf), multT(v))));
 }
 
 // Helper functions

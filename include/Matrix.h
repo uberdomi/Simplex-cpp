@@ -8,7 +8,7 @@ class Matrix {
     private:
     // Immutable - stupid, let's make it changeable
     util::matrix _A;
-    const size_t _n,_m;
+    size_t _n,_m;
 
     // Can be updated
     util::matrix _A_inv{};
@@ -65,6 +65,8 @@ class Matrix {
     double det(); // det(A)
     util::vec solve(const util::vec& v) const ; // A^(-1)*v
     util::vec operator/(const util::vec& v) const ; // A^(-1)*v
+
+    Matrix ShermanMorrison(const util::vec& u, const util::vec& v);
 
     // Helper functions
 

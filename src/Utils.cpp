@@ -169,6 +169,7 @@ util::matrix util::t(const matrix& A) {
 }
 
 // Vector operations
+
 util::vec util::add(const vec& v, const vec& w) {
     if(v.size() != w.size()) {
         throw std::invalid_argument("Vectors have different lengths");
@@ -204,4 +205,30 @@ util::vec util::scale(const vec& v, const double& sf) {
     }
 
     return result;
+}
+
+double util::dot(const vec& v, const vec& w) {
+    // v^t * w
+
+    if(v.size() != w.size()) {
+        throw std::invalid_argument("Vectors have different lengths");
+    }
+    double sum{0.0};
+    for(int i=0; i<v.size(); i++) {
+        sum += v.at(i)*w.at(i);
+    }
+
+    return sum;
+}
+
+util::matrix util::dyadic(const vec& v, const vec& w) {
+    // v * w^t
+    matrix vw(v.size(), vec(w.size(), 0.0));
+    for(int i=0; i<v.size(); i++) {
+        for(int j=0; j<w.size(); j++) {
+            vw.at(i).at(j) = v.at(i)*w.at(j);
+        }
+    }
+
+    return vw;
 }

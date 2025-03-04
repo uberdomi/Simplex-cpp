@@ -39,6 +39,10 @@ namespace util {
     vec add(const vec& v, const vec& w);
     vec sub(const vec& v, const vec& w);
     vec scale(const vec& v, const double& sf);
+
+    double dot(const vec& v, const vec& w);
+    matrix dyadic(const vec& v, const vec& w);
+    
 }
 
 #endif // _UTIL
