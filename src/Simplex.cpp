@@ -4,9 +4,6 @@
 
 #include <stdexcept>
 #include <algorithm>
-#include <queue>
-#include <set>
-#include <list>
 #include <iostream>
 #include <bits/stdc++.h> 
 
@@ -47,7 +44,7 @@ void Simplex::setMaximization(const util::vec& objective){
 
 // Solving
 
-std::pair<util::vec, Simplex::Status> Simplex::solve(){
+std::pair<std::pair<util::vec, util::vec>, Simplex::Status> Simplex::solve(){
     if(!validSystem()) {
         throw std::runtime_error("Optimization system invalid!");
     }
@@ -79,17 +76,14 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(){
     int n = _c.size();
     std::cout << "n: " << n << ", m: " << m << std::endl;
 
-    std::queue<int> N_set{}; // Normal set
-    std::list<int> B_set{}; // Basic set
-    std::list<int>::iterator it = B_set.begin();
+    std::vector<int> N_set{n}; // Normal set -> starting with regular variables
+    std::vector<int> B_set{m}; // Basic set -> starting with slack variables
 
-    for(int i=0; i<n; i++) {
-        N_set.push(i);
-    }
+    // Assign increasing values starting from 1
+    std::iota(N_set.begin(), N_set.end(), 1);
 
-    for(int i=n; i<m+n; i++) {
-        B_set.push_back(i);
-    }
+    // Assign increasing values starting from n
+    std::iota(B_set.begin(), B_set.end(), n);
 
     // Use matrices with the *column representation*
     Matrix A_B_t = Matrix(util::eye(m));
@@ -104,9 +98,15 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(){
 
     // util::vec x_N(n, 0.0); // - always the case
     util::vec x_B = _b;
-    util::vec s_N{};
+    util::vec s_N(n, 0.0);
 
-    int p{0}, p_i{0}, q{0}; // indices to be swapped in each iteration
+    int q_i{0}, p_i{0}; // indices to be swapped in each iteration
+    // Sets/structures affected:
+    // N <-> B
+    // c_N <-> c_B
+    // A_N_t <-> A_B_t (originally columns, here rows in row representations)
+    // s_N and x_B NOT since the counterparts are just 0
+
     util::vec d{};
     double x_q{0.0};
 
@@ -128,7 +128,7 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(){
         std::cout << "----------" << std::endl;
         // --- End Printing
 
-        // Iteration calculations
+        // --- Start Iteration calculations
         lambda = A_B_t.solve(c_B);
         std::cout << "-- lambda --" << std::endl;
         util::print(lambda);
@@ -136,6 +136,7 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(){
         s_N = util::sub(c_N, A_N_t * lambda);
         std::cout << "-- s_N --" << std::endl;
         util::print(s_N);
+        // --- End Iteration calculations
 
         // TODO check s_N optimality
         if(std::all_of(s_N.begin(), s_N.end(), [](const double& val) {
@@ -143,7 +144,7 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(){
         })) {
             // TODO return x corresponding to B and N
             std::cout << "--> Exiting: problem optimal!" << std::endl;
-            return {discardSlack(x_B,B_set), optimal};
+            return {distillSolution(x_B,B_set,n), optimal};
         }
 
         std::cout << "-> Not optimal yet" << std::endl;
@@ -154,8 +155,7 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(){
         std::cout << "-- q --" << std::endl;
         std::cout << q << std::endl;
 
-        Matrix A_B = A_B_t.T();
-        d = A_B.solve(A_N_t.getRow(0));
+        d = A_B_t.T().solve(A_N_t.getRow(0));
         std::cout << "-- d --" << std::endl;
         util::print(d);
 
@@ -179,7 +179,7 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(){
             // TODO check d condition
             // <=> d <= 0 -> unbounded
             std::cout << "--> Exiting: problem unbounded!" << std::endl;
-            return {discardSlack(x_B,B_set), unbounded};
+            return {distillSolution(x_B,B_set,n), unbounded};
         }
 
         std::cout << "-> Checked the d condition with" << std::endl;
@@ -198,11 +198,6 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(){
         std::cout << "-> Updating elements" << std::endl;
         util::print(x_B);
         util::print(util::scale(d, x_q));
-
-        // TODO make it work with a proper condition: what about the incoming index p?
-        // x_B = util::add(x_B, util::scale(d, x_q));
-        // util::print(x_B);
-        x_B = A_B.solve(_b);
 
         std::cout << "-> Swapping rows" << std::endl;
         std::cout << "p: " << p << std::endl;
@@ -229,6 +224,11 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(){
         N_set.push(p);
         *it = q;
 
+        // TODO make it work with a proper condition: what about the incoming index p?
+        // x_B = util::add(x_B, util::scale(d, x_q));
+        // util::print(x_B);
+        x_B = A_B_t.T().solve(_b);
+
         // --- End Pivot
 
     }
@@ -253,14 +253,21 @@ bool Simplex::validSystem() const {
     return true;
 }
 
-util::vec Simplex::discardSlack(const util::vec& x_B, const std::list<int>& B_set){
-    int n = x_B.size();
-    util::vec x(n, 0.0);
-    for(const int& i : B_set) {
-        if(i < n) {
-            x.at(i) = x_B.at(i);
+std::pair<util::vec, util::vec> Simplex::distillSolution(const util::vec& x_B, const std::vector<int>& B_set, const int& n){
+    int m = B_set.size();
+
+    util::vec sol(n, 0.0);
+    util::vec slack(m, 0.0);
+
+    // i-th entry of x_B corresponds to the real B_set(i)-th entry
+    for(int i=0; i<m; i++) {
+        if(B_set.at(i) >= n) {
+            slack.at(B_set.at(i) - n) = x_B.at(i);
+        }
+        else {
+            sol.at(B_set.at(i)) = x_B.at(i);
         }
     }
 
-    return x;
+    return {sol,slack};
 }

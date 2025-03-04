@@ -21,7 +21,7 @@ KKT conditions:
 1) l = A_B^(-t)*c_B
 2) s_N = c_N - A_N^t*l
 - if s_N >= 0 -> optimal (KKT sufficient)
-3) Pivot: swap a column of A_N with a column of A_B - (?) just pick any? - prolly good to keep N as a queue
+3) Pivot: pick index q_i where *s_N < 0* swap a column of A_N with a column of A_B - (?) just pick any? - prolly good to keep N as a queue
 - changes B and N by one entry
 - goes to a new vertex with a *smaller objective value*
 - (?) keep track of what Bases were used - no cycles? How to ensure a basis is non-degenerate (A_B full rank)?
@@ -32,11 +32,12 @@ KKT conditions:
 6) Update new x_B = old x_B + Dx_B, swap index p with q in N and B
 7) Repeat
 
-TODO:
--- Generalize problem: various constraints/variables to be added
+--- TODO:
+1) Generalize problem: various constraints/variables to be added
 - Not only Ax<=b, but also Ax=b, x not necessarily >=0
 - Translate to the standard form, x any <=> x=x+ - x-, x+, x- >=0
 - Ax=b doesn't need slack -> can cause troubles
--- Add initial problem: >> min s << s.t. [A|I]*[x|s]^t = b, x,s >= 0 -> if s=0, then feasible, starting point x=0, s=b for the above ? when b negative ? -> multiply them rows with (-1)
--- Do some refactoring
+2) Add initial problem: >> min s << s.t. [A|I]*[x|s]^t = b, x,s >= 0 -> if s=0, then feasible, starting point x=0, s=b for the above ? when b negative ? -> multiply them rows with (-1)
+3) Do some refactoring
+- Sherman-Morrison Formula for matrix updates
 - improve performance

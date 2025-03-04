@@ -32,13 +32,14 @@ class Simplex {
 
     // Solving
 
-    std::pair<util::vec, Status> solve();
+    // Primal, slack, status
+    std::pair<std::pair<util::vec, util::vec>, Simplex::Status> solve();
 
     private:
     // Helper functions
     bool validSystem() const;
 
-    static util::vec discardSlack(const util::vec& x_B, const std::list<int>& B_set);
+    static std::pair<util::vec, util::vec> distillSolution(const util::vec& x_B, const std::vector<int>& B_set, const int& n);
 
 };
 
