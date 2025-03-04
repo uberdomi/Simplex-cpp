@@ -21,6 +21,7 @@ namespace util {
 
     // Printing
     void print(const vec& v);
+    void print(const std::vector<int>& v);
     void print(const matrix& A);
 
     // Conversions

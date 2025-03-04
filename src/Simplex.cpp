@@ -76,14 +76,20 @@ std::pair<std::pair<util::vec, util::vec>, Simplex::Status> Simplex::solve(){
     int n = _c.size();
     std::cout << "n: " << n << ", m: " << m << std::endl;
 
-    std::vector<int> N_set{n}; // Normal set -> starting with regular variables
-    std::vector<int> B_set{m}; // Basic set -> starting with slack variables
+    std::vector<int> N_set(n); // Normal set -> starting with regular variables
+    std::vector<int> B_set(m); // Basic set -> starting with slack variables
 
-    // Assign increasing values starting from 1
-    std::iota(N_set.begin(), N_set.end(), 1);
+    // Assign increasing values starting from 0
+    std::iota(N_set.begin(), N_set.end(), 0);
 
     // Assign increasing values starting from n
     std::iota(B_set.begin(), B_set.end(), n);
+
+    std::cout << "----- N_set -----" << std::endl;
+    util::print(N_set);
+
+    std::cout << "----- B_set -----" << std::endl;
+    util::print(B_set);
 
     // Use matrices with the *column representation*
     Matrix A_B_t = Matrix(util::eye(m));
@@ -100,7 +106,7 @@ std::pair<std::pair<util::vec, util::vec>, Simplex::Status> Simplex::solve(){
     util::vec x_B = _b;
     util::vec s_N(n, 0.0);
 
-    int q_i{0}, p_i{0}; // indices to be swapped in each iteration
+    int i_N{0}, i_B{0}; // indices to be swapped in each iteration
     // Sets/structures affected:
     // N <-> B
     // c_N <-> c_B
@@ -108,7 +114,7 @@ std::pair<std::pair<util::vec, util::vec>, Simplex::Status> Simplex::solve(){
     // s_N and x_B NOT since the counterparts are just 0
 
     util::vec d{};
-    double x_q{0.0};
+    double x_pivot{0.0};
 
     util::vec lambda{};
     // --- End Initial setting
@@ -138,98 +144,82 @@ std::pair<std::pair<util::vec, util::vec>, Simplex::Status> Simplex::solve(){
         util::print(s_N);
         // --- End Iteration calculations
 
-        // TODO check s_N optimality
-        if(std::all_of(s_N.begin(), s_N.end(), [](const double& val) {
-            return val >= 0;
-        })) {
-            // TODO return x corresponding to B and N
+        // --- Start Optimality Condition
+        // Find the first negative entry of s_N
+        i_N = -1;
+        for(int i=0; i<n; i++) {
+            if(s_N.at(i) < 0){
+                i_N = i;
+                break;
+            }
+        }
+        if(i_N == -1) {
+            // s_N non-negative -> optimal solution found
             std::cout << "--> Exiting: problem optimal!" << std::endl;
             return {distillSolution(x_B,B_set,n), optimal};
         }
 
+        // s_N.at(i_N) negative!
         std::cout << "-> Not optimal yet" << std::endl;
+        std::cout << "i_N: " << i_N << std::endl;
+
+        // --- End Optimality Condition
 
         // --- Start Pivot
-        // Pick indices to be swapped away
-        q = N_set.front();
-        std::cout << "-- q --" << std::endl;
-        std::cout << q << std::endl;
+        // i_N: N -> B
 
-        d = A_B_t.T().solve(A_N_t.getRow(0));
+        d = A_B_t.T().solve(A_N_t.getRow(i_N));
         std::cout << "-- d --" << std::endl;
         util::print(d);
 
         // TODO check d condition
         // TODO iterate over positive entries of d
-        p_i = 0;
-        x_q = -1.0; // All entries should be positive -> x_q < 0 <=> not chosen yet
+        i_B = 0;
+        x_pivot = -1.0; // All entries should be positive -> x_pivot < 0 <=> not chosen yet
         for(int i=0; i<m; i++) {
             if(d.at(i) > 0.0){
-                if(x_q < 0.0) {
-                    p_i = i;
-                    x_q = x_B.at(i) / d.at(i);
+                if(x_pivot < 0.0) {
+                    i_B = i;
+                    x_pivot = x_B.at(i) / d.at(i);
                 }
-                if(x_B.at(i) / d.at(i) < x_q) {
-                    p_i = i;
-                    x_q = x_B.at(i) / d.at(i);
+                if(x_B.at(i) / d.at(i) < x_pivot) {
+                    i_B = i;
+                    x_pivot = x_B.at(i) / d.at(i);
                 }
             }
         }
-        if(util::isEqual(x_q, -1.0)) {
-            // TODO check d condition
+        if(x_pivot < 0) {
             // <=> d <= 0 -> unbounded
             std::cout << "--> Exiting: problem unbounded!" << std::endl;
             return {distillSolution(x_B,B_set,n), unbounded};
         }
 
         std::cout << "-> Checked the d condition with" << std::endl;
-        std::cout << "x_q: " << x_q << std::endl;
-        std::cout << "p_i: " << p_i << std::endl;
-
-        // // Get the p_i'th element of the list
-        // it = B_set.begin();
-        // std::advance(it, p_i);
-        // p = *it;
-        // Or with that
-        it = std::next(B_set.begin(), p_i);  // Move iterator to the p_i-th element
-        p = *it;
-
-        // Update elements
-        std::cout << "-> Updating elements" << std::endl;
-        util::print(x_B);
-        util::print(util::scale(d, x_q));
-
-        std::cout << "-> Swapping rows" << std::endl;
-        std::cout << "p: " << p << std::endl;
-        std::cout << "q: " << q << std::endl;
-
-        // TODO swap indices q, p from N, B resp.
-        // From A_N we always pop from the top
-        // In A_B we explicitly found the index p_i to replace the row with the row from A_N
-        Matrix::swapRows(A_N_t, A_B_t, 0, p_i);
-        // Newly swapped-out row emplaced back
-        A_N_t.swapToBack(0);
-
-        // Also swap c
-        std::swap(c_B.at(p_i), c_N.at(0));
-        c_N.push_back(std::move(c_N.front()));  // Move first row to the back
-        c_N.erase(c_N.begin());  // Remove the now-empty first row
-
-        // Also change basis to normal at p_i for x
-        x_B.at(p_i) = 0.0;
-
-        // N: +p -q
-        // B: -p +q
-        N_set.pop();
-        N_set.push(p);
-        *it = q;
-
-        // TODO make it work with a proper condition: what about the incoming index p?
-        // x_B = util::add(x_B, util::scale(d, x_q));
-        // util::print(x_B);
-        x_B = A_B_t.T().solve(_b);
+        std::cout << "x_pivot: " << x_pivot << std::endl;
+        std::cout << "i_B: " << i_B << std::endl;
 
         // --- End Pivot
+
+        // --- Start Swapping and Updating
+
+        // Update x_B
+        x_B = util::sub(x_B, util::scale(d, x_pivot));
+        x_B.at(i_B) = x_pivot;
+        
+        std::cout << "-> Indices to be swapped" << std::endl;
+        std::cout << "q: " << N_set.at(i_N) << ": N -> B " << std::endl;
+        std::cout << "p: " << B_set.at(i_B) << ": B -> N " << std::endl;
+
+        // Sets/structures affected:
+        // N <-> B
+        // c_N <-> c_B
+        // A_N_t <-> A_B_t (originally columns, here rows in row representations)
+        // s_N and x_B NOT since the counterparts are just 0
+        std::swap(N_set.at(i_N), B_set.at(i_B));
+        std::swap(c_N.at(i_N), c_B.at(i_B));
+        Matrix::swapRows(A_N_t, A_B_t, i_N, i_B);
+
+        // --- End Swapping and Updating
 
     }
 

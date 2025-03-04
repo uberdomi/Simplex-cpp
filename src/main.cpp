@@ -46,14 +46,16 @@ int main(int argc, char** argv) {
 
     util::matrix A0{{1,3}, {1,1}, {3,1}};
     util::vec b0{15,7,15};
-    util::vec c0{1,2};
+    util::vec c0{1,-1};
     // Considering the LP min(x) c^t*x s.t. A*x<=0, x>=0
     Simplex model{};
     model.addConstraints(A0,b0);
     model.setMaximization(c0);
-    auto [vertex, status] = model.solve();
+    auto [sol_slack, status] = model.solve();
 
-    util::print(vertex);
+    util::print(sol_slack.first);
+
+    util::print(sol_slack.second);
 
     return 0;
 }

@@ -32,7 +32,7 @@ class Simplex {
 
     // Solving
 
-    // Primal, slack, status
+    // {Primal, slack}, status
     std::pair<std::pair<util::vec, util::vec>, Simplex::Status> solve();
 
     private:

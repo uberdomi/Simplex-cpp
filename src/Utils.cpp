@@ -76,6 +76,13 @@ void util::print(const vec& v) {
     std::cout << "]" << std::endl;
 }
 
+void util::print(const std::vector<int>& v) {
+    std::cout << "[ ";
+    for (const double& val : v) {
+        std::cout << val << ", ";
+    }
+    std::cout << "]" << std::endl;
+}
 
 void util::print(const matrix& A) {
     std::cout << "{" << std::endl;
