@@ -32,3 +32,11 @@ KKT conditions:
 6) Update new x_B = old x_B + Dx_B, swap index p with q in N and B
 7) Repeat
 
+TODO:
+-- Generalize problem: various constraints/variables to be added
+- Not only Ax<=b, but also Ax=b, x not necessarily >=0
+- Translate to the standard form, x any <=> x=x+ - x-, x+, x- >=0
+- Ax=b doesn't need slack -> can cause troubles
+-- Add initial problem: >> min s << s.t. [A|I]*[x|s]^t = b, x,s >= 0 -> if s=0, then feasible, starting point x=0, s=b for the above ? when b negative ? -> multiply them rows with (-1)
+-- Do some refactoring
+- improve performance
