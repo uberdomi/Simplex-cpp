@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run Program",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/main",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "externalConsole": false,
+            "stopAtEntry": false,
+            "environment": [],
+            "MIMode": "gdb"
+        }
+    ]
+}

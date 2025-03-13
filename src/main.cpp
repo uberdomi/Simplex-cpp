@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
 
     util::matrix A0{{1,3}, {1,1}, {3,1}};
     util::vec b0{15,7,15};
-    util::vec c0{2,1};
+    util::vec c0{2,2};
     // Considering the LP min(x) c^t*x s.t. A*x<=0, x>=0
     Simplex model{};
     model.addConstraints(A0,b0);

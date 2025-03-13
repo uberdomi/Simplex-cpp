@@ -38,6 +38,7 @@ KKT conditions:
 - Translate to the standard form, x any <=> x=x+ - x-, x+, x- >=0
 - Ax=b doesn't need slack -> can cause troubles
 2) Add initial problem: >> min s << s.t. [A|I]*[x|s]^t = b, x,s >= 0 -> if s=0, then feasible, starting point x=0, s=b for the above ? when b negative ? -> multiply them rows with (-1)
-3) Do some refactoring
-- Sherman-Morrison Formula for matrix updates
+- distinguish between slack and real variables before computing initial -> only later add slack accordingly
+3) Update step: if ShermanMorrison fails choose a different i_N until successful - if not successful, then idk, something is BAD
+4) Do some refactoring
 - improve performance
