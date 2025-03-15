@@ -41,8 +41,6 @@ class Simplex {
         util::vec _rhs, _obj;
         int _s_length=0; // Each time an inequality constraint is added, needs to add as many slack variables; the final matrix then needs to be rectangular, with column length _num + _s_length (i.e. add 0's where necessary)
 
-        // util::vec _x_pos, _x_neg, _s; // positive/negative part, slack - not needed to keep track of since the value is computed only in the end
-
         public:
         Variable(int num, VarType var_type);
 
@@ -53,6 +51,7 @@ class Simplex {
 
         // [perf] move the own lhs/rhs values and invalidate them -> no longer needed
         // Turn own constraints into the standard form Ax=b
+        // Make certain b >= 0
         std::tuple<util::matrix, util::vec, util::vec> getABC();
 
         // Given the solution vector with x+, x- and slack, return the final variable value
@@ -61,6 +60,9 @@ class Simplex {
     };
 
     std::unordered_map<std::string, std::shared_ptr<Variable>> _vars;
+
+    // Stores the start indices for each alias in the final variable vector
+    std::vector<std::pair<std::string, int>> _var_starts;
 
     public:
 
@@ -78,6 +80,8 @@ class Simplex {
 
     void addObjective(const std::string& alias, const util::vec& obj, ObjType type = min);
 
+    std::pair<util::vec, Simplex::Status> solve();
+
     // --- New Approach
 
     // --- Old Approach
@@ -94,21 +98,28 @@ class Simplex {
     // Solving
 
     // {Primal, slack}, status
-    std::pair<std::pair<util::vec, util::vec>, Simplex::Status> solve();
+    // std::pair<std::pair<util::vec, util::vec>, Simplex::Status> solve();
     // --- Old Approach
 
     private:
+    // Helper functions
+
+    // --- Old Approach
+    bool validSystem() const;
+
+    static std::pair<util::vec, util::vec> distillSolution(const util::vec& x_B, const std::vector<int>& B_set, const int& n);
+
     // --- New Approach
     std::shared_ptr<Variable> findVar(const std::string& alias);
 
     /// @brief Throw an exception if the system of constraints lhs * x ? rhs is invalid
     static void checkSystem(const util::matrix& lhs, const util::vec& rhs);
 
-    // --- Old Approach
-    // Helper functions
-    bool validSystem() const;
+    /// @brief Collect the problem formulations from all stored variables and append them to the final system in the standard form min c^t*x, s.t. Ax=b, x>=0
+    void setup();
 
-    static std::pair<util::vec, util::vec> distillSolution(const util::vec& x_B, const std::vector<int>& B_set, const int& n);
+    /// @brief Solves the system in the standard form min c^t*x, s.t. Ax=b, x>=0, *provided* the valid initial point
+    static std::pair<util::vec, Simplex::Status> solve(util::matrix&& lhs, util::vec&& rhs, util::vec&& obj, util::vec&& init);
 
 };
 

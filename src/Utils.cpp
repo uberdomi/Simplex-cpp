@@ -248,3 +248,17 @@ util::matrix util::dyadic(const vec& v, const vec& w) {
 
     return vw;
 }
+
+util::vec util::subvector(const vec& v, int start, int end) {
+    if(start < 0 || end > v.size()) {
+        throw std::invalid_argument("The provided indices are out of range!");
+    }
+
+    util::vec result;
+    result.reserve(end - start);
+    std::transform(v.begin() + start, v.begin() + end, result.begin(), [](const double& val){
+        return val;
+    });
+
+    return result;
+}   

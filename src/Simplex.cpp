@@ -103,10 +103,18 @@ std::tuple<util::matrix, util::vec, util::vec> Simplex::Variable::getABC() {
         }
     }
 
-    _obj.reserve(row_length);
     // Add slack to the objective
+    _obj.reserve(row_length);
     for(int i=_obj.size(); i<_obj.capacity(); i++) {
         _obj[i] = 0.0;
+    }
+
+    // Make sure rhs is positive
+    for(int i=0; i<_rhs.size(); i++) {
+        if(_rhs[i] < 0) {
+            _rhs[i] = -_rhs[i];
+            _lhs[i] = util::scale(_lhs[i], -1);
+        }
     }
 
     return {_lhs,_rhs,_obj};
@@ -168,6 +176,36 @@ void Simplex::addObjective(const std::string& alias, const util::vec& obj, ObjTy
         throw std::invalid_argument("Alias not assigned to any variable!");
     }
     var_ptr->addObjective(obj,type);
+}
+
+std::pair<util::vec, Simplex::Status> Simplex::solve() {
+    // Formulate the problem
+    setup();
+    // Now we have a valid problem formulation
+    // Standard form: min c^t*x s.t. Ax=b, x>=0
+    int n = _b.size();
+    int m = _c.size();
+
+    // Solve the initial feasibility problem >> min s << s.t. [A|I]*[x|s]^t = b, x,s >= 0
+    util::matrix A_init = (Matrix(_A) | util::eye(n)).get();
+    util::vec b_init = _b;
+    util::vec c_init = util::vec(m, 0.0);
+    util::append(c_init, util::vec(n, 1.0)); // Minimize the slack variables
+    util::vec x_init = util::vec(m, 0.0);
+    util::vec b_copy = _b;
+    util::append(c_init, std::move(b_copy)); // b is the initial solution
+
+    std::pair<util::vec, Simplex::Status> init = solve(std::move(A_init), std::move(b_init), std::move(c_init), std::move(x_init));
+
+    // TODO distill solution
+    if(init.second != optimal) {
+        return {}
+    }
+
+    // TODO distill solution
+    // Initial point : discard slack from the initial solution
+    return solve(std::move(_A), std::move(_b), std::move(_c), util::subvector(init.first, 0, m));
+
 }
 
 // Constraints
@@ -416,7 +454,10 @@ bool Simplex::validSystem() const {
         return false;
     }
 
-    return true;
+    // Check whether b >= 0
+    return std::all_of(_b.begin(), _b.end(), [](const double& val){
+        return val >= 0;
+    });
 }
 
 std::pair<util::vec, util::vec> Simplex::distillSolution(const util::vec& x_B, const std::vector<int>& B_set, const int& n){
@@ -460,5 +501,38 @@ std::shared_ptr<Simplex::Variable> Simplex::findVar(const std::string& alias) {
     }
     else {
         return _vars.at(alias);
+    }
+}
+
+void Simplex::setup() {
+    // Concatenate all the problem formulations into the final system
+    int iter=0;
+    std::for_each(_vars.begin(), _vars.end(), [this, &iter](const std::pair<std::string, std::shared_ptr<Variable>>& elem) {
+        auto [A,b,c] = elem.second->getABC();
+        util::append(_b,std::move(b));
+        util::append(_c,std::move(c));
+        if(iter > 0){
+            // Append the 0's
+            A = (Matrix(util::zeros(A.size(), iter)) | A).get();
+        }
+        util::append(_A,std::move(A));
+
+        // Current variable starts at iter
+        _var_starts.push_back({elem.first, iter});
+        // How many new variables added
+        iter += c.size();
+    });
+
+    // Make _A rectangular - add 0's from the other side
+    // iter == _c.size() now, == #variables == #columns of _A
+    for(util::vec& row : _A) {
+        if(row.size() < iter) {
+            util::append(row, util::vec(iter - row.size(), 0.0));
+        }
+    }
+
+    // Something went wrong
+    if(!validSystem()) {
+        throw std::runtime_error("Optimization system invalid!");
     }
 }

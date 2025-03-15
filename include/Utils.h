@@ -45,6 +45,8 @@ namespace util {
 
     double dot(const vec& v, const vec& w);
     matrix dyadic(const vec& v, const vec& w);
+
+    vec subvector(const vec& v, int start, int end); // End exclusive - as with iterators
     
 }
 
