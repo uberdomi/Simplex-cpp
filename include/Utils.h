@@ -35,6 +35,9 @@ namespace util {
 
     matrix t(const matrix& A);
 
+    void append(matrix& A, matrix&& B);
+    void append(vec& v, vec&& w);
+
     // Vector operations
     vec add(const vec& v, const vec& w);
     vec sub(const vec& v, const vec& w);

@@ -168,6 +168,22 @@ util::matrix util::t(const matrix& A) {
     return B;
 }
 
+void util::append(matrix& A, matrix&& B) {
+    A.reserve(A.size() + B.size());
+    // Append B to the end of A
+    std::transform(B.begin(), B.end(), A.end(), [](util::vec& row) {
+        return std::move(row);
+    });
+}
+
+void util::append(vec& v, vec&& w) {
+    v.reserve(v.size() + w.size());
+    // Append w to the end of v
+    std::transform(w.begin(), w.end(), v.end(), [](double& val) {
+        return std::move(val);
+    });
+}
+
 // Vector operations
 
 util::vec util::add(const vec& v, const vec& w) {

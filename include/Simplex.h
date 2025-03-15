@@ -36,14 +36,17 @@ class Simplex {
         // To be stored in a map of unique_ptrs
         private:
         const int _num; // Once associated with an alias, cannot change its size
-        util::matrix _lhs;
+        const VarType _type;
+        util::matrix _lhs; // Each row has length _num
         util::vec _rhs;
-        util::vec _x_pos, _x_neg, _s; // positive/negative part, slack
+        int _slack_counter=0; // Each time an inequality constraint is added, needs to add as many slack variables; the final matrix then needs to be rectangular, with column length _num + _slack_counter (i.e. add 0's where necessary)
+        
+        // util::vec _x_pos, _x_neg, _s; // positive/negative part, slack - not needed to keep track of since the value is computed only in the end
 
         public:
         Variable(int num, VarType var_type);
 
-        void addConstraint(util::matrix lhs, util::vec rhs, ConstrType = equal);
+        void addConstraint(util::matrix lhs, util::vec rhs, ConstrType constr_type = equal);
 
         // [perf] move the own lhs/rhs values and invalidate them -> no longer needed
         // Turn own constraints into the standard form Ax=b
@@ -94,6 +97,9 @@ class Simplex {
     private:
     // --- New Approach
     bool findVar(const std::string& alias);
+
+    /// @brief Throw an exception if the system of constraints lhs * x ? rhs is invalid
+    static void checkSystem(const util::matrix& lhs, const util::vec& rhs);
 
     // --- Old Approach
     // Helper functions

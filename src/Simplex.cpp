@@ -5,7 +5,79 @@
 #include <stdexcept>
 #include <algorithm>
 #include <iostream>
-#include <bits/stdc++.h> 
+#include <bits/stdc++.h>
+
+// Variable
+
+Simplex::Variable::Variable(int num, VarType var_type) : _num(num), _type{var_type}, _lhs{}, _rhs{} {
+    if(num < 1) {
+        throw std::invalid_argument("Variable length must be greater than 0!");
+    }
+}
+
+void Simplex::Variable::addConstraint(util::matrix lhs, util::vec rhs, ConstrType constr_type) {
+    Simplex::checkSystem(lhs,rhs);
+    if(lhs.at(0).size() != _num) {
+        throw std::invalid_argument("Matrix doesn't correspond to the variable length!");
+    }
+
+    if (_type == unb) {
+        // Needs to account for x = x+ - x-
+        // Ax = b <=> [A | -A] [x+^t | x-^t]^t = b
+        lhs = (Matrix(lhs) | (Matrix(lhs) * (-1))).get();
+    }
+
+    switch(constr_type) {
+        case equal: {
+            // Ax = b - canonical form
+            // Append A to the end of _lhs, i.e. A_new = [A_old^t | A^t]^t
+            util::append(_lhs, std::move(lhs));
+            util::append(_rhs, std::move(rhs));
+            return;
+        };
+        case leq: {
+            // Add previous slacks
+            if(_slack_counter > 0) {
+                lhs = (Matrix(lhs) | Matrix(util::zeros(lhs.size(), _slack_counter))).get();
+            }
+            _slack_counter += lhs.size(); // Number of slack variables for this set of constraints
+
+            // Ax <= b <=> [A | I] [x^t | s^t]^t = b - add slack at the right position
+            lhs = (Matrix(lhs) | Matrix(util::eye(lhs.size()))).get();
+
+            util::append(_lhs, std::move(lhs));
+            util::append(_rhs, std::move(rhs));
+            return;
+        };
+        case geq: {
+            // Ax >= b <=> -Ax <= -b - and proceed as in leq
+            lhs = (Matrix(lhs) * (-1)).get();
+            rhs = util::scale(rhs, -1);
+
+            // Add previous slacks
+            if(_slack_counter > 0) {
+                lhs = (Matrix(lhs) | Matrix(util::zeros(lhs.size(), _slack_counter))).get();
+            }
+            _slack_counter += lhs.size(); // Number of slack variables for this set of constraints
+
+            // Ax <= b <=> [A | I] [x^t | s^t]^t = b - add slack at the right position
+            lhs = (Matrix(lhs) | Matrix(util::eye(lhs.size()))).get();
+
+            util::append(_lhs, std::move(lhs));
+            util::append(_rhs, std::move(rhs));
+            return;
+        };
+        default: throw std::invalid_argument("Undefined constraint type!");
+    }
+}
+
+std::pair<util::matrix, util::vec> Simplex::Variable::getAb() {
+
+}
+
+util::vec Simplex::Variable::getValue(util::vec sol) {
+
+}
 
 // Constraints
 
@@ -273,4 +345,19 @@ std::pair<util::vec, util::vec> Simplex::distillSolution(const util::vec& x_B, c
     }
 
     return {sol,slack};
+}
+
+// --- New Approach utility functions
+
+void Simplex::checkSystem(const util::matrix& lhs, const util::vec& rhs) {
+    // Must be rectangular, size > 0, matching sizes
+    if(!util::isRectangular(lhs)) {
+        throw std::invalid_argument("Matrix not rectangular!");
+    }
+    if(lhs.size() == 0){
+        throw std::invalid_argument("Empty constraint!");
+    }
+    if(lhs.size() != rhs.size()){
+        throw std::invalid_argument("Constraint dimensions aren't the same!");
+    }
 }

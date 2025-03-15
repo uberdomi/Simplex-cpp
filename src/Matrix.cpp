@@ -44,7 +44,7 @@ Matrix Matrix::add(const util::matrix& B) const {
 }
 
 Matrix Matrix::add(const Matrix& B) const {
-    return(add(B.getMatrix()));
+    return(add(B.get()));
 }
 
 Matrix Matrix::operator+(const util::matrix& B) const {
@@ -73,7 +73,7 @@ Matrix Matrix::conc(const util::matrix& B) const {
 }
 
 Matrix Matrix::conc(const Matrix& B) const {
-    return(conc(B.getMatrix()));
+    return(conc(B.get()));
 }
 
 Matrix Matrix::operator|(const util::matrix& B) const {
@@ -159,7 +159,7 @@ Matrix Matrix::mult(const util::matrix& B) const {
 }
 
 Matrix Matrix::mult(const Matrix& B) const {
-    return mult(B.getMatrix());
+    return mult(B.get());
 }
 
 util::vec Matrix::operator*(const util::vec& v) const {
@@ -232,7 +232,7 @@ Matrix Matrix::ShermanMorrison(const util::vec& u, const util::vec& v) {
 
 // Helper functions
 
-util::matrix Matrix::getMatrix() const {
+util::matrix Matrix::get() const {
     return _A;
 }
 

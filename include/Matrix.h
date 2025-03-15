@@ -70,7 +70,7 @@ class Matrix {
 
     // Helper functions
 
-    util::matrix getMatrix() const ; // A
+    util::matrix get() const ; // A
     util::vec getRow(const int& i) const ; // A_i
 
     static void swapRows(Matrix& A, Matrix& B, const int& i, const int& j);
