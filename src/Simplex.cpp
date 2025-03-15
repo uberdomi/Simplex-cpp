@@ -7,15 +7,15 @@
 #include <iostream>
 #include <bits/stdc++.h>
 
-// Variable
+// --- Variable ---
 
-Simplex::Variable::Variable(int num, VarType var_type) : _num(num), _type{var_type}, _lhs{}, _rhs{} {
+Simplex::Variable::Variable(int num, VarType var_type) : _num(num), _type{var_type}, _lhs{}, _rhs{}, _obj{} {
     if(num < 1) {
         throw std::invalid_argument("Variable length must be greater than 0!");
     }
 }
 
-void Simplex::Variable::addConstraint(util::matrix lhs, util::vec rhs, ConstrType constr_type) {
+void Simplex::Variable::addConstraint(util::matrix lhs, util::vec rhs, ConstrType type) {
     Simplex::checkSystem(lhs,rhs);
     if(lhs.at(0).size() != _num) {
         throw std::invalid_argument("Matrix doesn't correspond to the variable length!");
@@ -27,7 +27,7 @@ void Simplex::Variable::addConstraint(util::matrix lhs, util::vec rhs, ConstrTyp
         lhs = (Matrix(lhs) | (Matrix(lhs) * (-1))).get();
     }
 
-    switch(constr_type) {
+    switch(type) {
         case equal: {
             // Ax = b - canonical form
             // Append A to the end of _lhs, i.e. A_new = [A_old^t | A^t]^t
@@ -71,7 +71,22 @@ void Simplex::Variable::addConstraint(util::matrix lhs, util::vec rhs, ConstrTyp
     }
 }
 
-std::pair<util::matrix, util::vec> Simplex::Variable::getAb() {
+void Simplex::Variable::addObjective(const util::vec& obj, ObjType type) {
+    // Default is min c^t * x
+    if(type == min) {
+        _obj = obj;
+    }
+    else {
+        _obj = util::scale(obj, -1);
+    }
+
+    // x = x+ - x- -> c^t * x = [c^t -c^t] * [x+ x-]
+    if(_type == unb) {
+        util::append(_obj, util::scale(_obj, -1));
+    }
+}
+
+std::tuple<util::matrix, util::vec, util::vec> Simplex::Variable::getABC() {
     // Add 0's where slack is present, to bring A to a rectangular form
     // Length corresponds to the variable vector [x+ x- s]
     int x_length{};
@@ -88,7 +103,13 @@ std::pair<util::matrix, util::vec> Simplex::Variable::getAb() {
         }
     }
 
-    return {_lhs,_rhs};
+    _obj.reserve(row_length);
+    // Add slack to the objective
+    for(int i=_obj.size(); i<_obj.capacity(); i++) {
+        _obj[i] = 0.0;
+    }
+
+    return {_lhs,_rhs,_obj};
 }
 
 util::vec Simplex::Variable::getValue(util::vec sol) {
@@ -121,6 +142,32 @@ util::vec Simplex::Variable::getValue(util::vec sol) {
     }
 
     return result;
+}
+
+// --- New Approach
+
+void Simplex::addVariables(const std::string& alias, int num, VarType type){
+    if(findVar(alias)) {
+        throw std::invalid_argument("Alias already used for the variable!");
+    }
+
+    _vars.insert({alias, std::make_shared<Simplex::Variable>(num, type)});
+}
+
+void Simplex::addConstraints(const std::string& alias, const util::matrix& lhs, const util::vec& rhs, ConstrType type) {
+    std::shared_ptr<Simplex::Variable> var_ptr = findVar(alias);
+    if(!var_ptr) {
+        throw std::invalid_argument("Alias not assigned to any variable!");
+    }
+    var_ptr->addConstraint(lhs,rhs,type);
+}
+
+void Simplex::addObjective(const std::string& alias, const util::vec& obj, ObjType type) {
+    std::shared_ptr<Simplex::Variable> var_ptr = findVar(alias);
+    if(!var_ptr) {
+        throw std::invalid_argument("Alias not assigned to any variable!");
+    }
+    var_ptr->addObjective(obj,type);
 }
 
 // Constraints
@@ -403,5 +450,15 @@ void Simplex::checkSystem(const util::matrix& lhs, const util::vec& rhs) {
     }
     if(lhs.size() != rhs.size()){
         throw std::invalid_argument("Constraint dimensions aren't the same!");
+    }
+}
+
+std::shared_ptr<Simplex::Variable> Simplex::findVar(const std::string& alias) {
+    auto it = _vars.find(alias);
+    if(_vars.find(alias) == _vars.end()) {
+        return nullptr;
+    }
+    else {
+        return _vars.at(alias);
     }
 }
