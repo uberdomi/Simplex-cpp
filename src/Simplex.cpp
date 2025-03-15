@@ -37,10 +37,10 @@ void Simplex::Variable::addConstraint(util::matrix lhs, util::vec rhs, ConstrTyp
         };
         case leq: {
             // Add previous slacks
-            if(_slack_counter > 0) {
-                lhs = (Matrix(lhs) | Matrix(util::zeros(lhs.size(), _slack_counter))).get();
+            if(_s_length > 0) {
+                lhs = (Matrix(lhs) | Matrix(util::zeros(lhs.size(), _s_length))).get();
             }
-            _slack_counter += lhs.size(); // Number of slack variables for this set of constraints
+            _s_length += lhs.size(); // Number of slack variables for this set of constraints
 
             // Ax <= b <=> [A | I] [x^t | s^t]^t = b - add slack at the right position
             lhs = (Matrix(lhs) | Matrix(util::eye(lhs.size()))).get();
@@ -55,10 +55,10 @@ void Simplex::Variable::addConstraint(util::matrix lhs, util::vec rhs, ConstrTyp
             rhs = util::scale(rhs, -1);
 
             // Add previous slacks
-            if(_slack_counter > 0) {
-                lhs = (Matrix(lhs) | Matrix(util::zeros(lhs.size(), _slack_counter))).get();
+            if(_s_length > 0) {
+                lhs = (Matrix(lhs) | Matrix(util::zeros(lhs.size(), _s_length))).get();
             }
-            _slack_counter += lhs.size(); // Number of slack variables for this set of constraints
+            _s_length += lhs.size(); // Number of slack variables for this set of constraints
 
             // Ax <= b <=> [A | I] [x^t | s^t]^t = b - add slack at the right position
             lhs = (Matrix(lhs) | Matrix(util::eye(lhs.size()))).get();
@@ -72,11 +72,55 @@ void Simplex::Variable::addConstraint(util::matrix lhs, util::vec rhs, ConstrTyp
 }
 
 std::pair<util::matrix, util::vec> Simplex::Variable::getAb() {
+    // Add 0's where slack is present, to bring A to a rectangular form
+    // Length corresponds to the variable vector [x+ x- s]
+    int x_length{};
+    if(_type == unb) {
+        x_length = 2*_num;
+    }
+    else {
+        x_length = _num;
+    }
+    int row_length = x_length + _s_length;
+    for(util::vec& row : _lhs) {
+        if(row.size() < row_length) {
+            util::append(row, util::vec(row_length - row.size(), 0.0));
+        }
+    }
 
+    return {_lhs,_rhs};
 }
 
 util::vec Simplex::Variable::getValue(util::vec sol) {
+    // Solution has length of row_length, is of form [x+ x- s]
+    int x_length{};
+    if(_type == unb) {
+        x_length = 2*_num;
+    }
+    else {
+        x_length = _num;
+    }
+    int row_length = x_length + _s_length;
 
+    if(sol.size() != row_length) {
+        throw std::invalid_argument("Solution doesn't correspond to the internal variable parameters");
+    }
+
+    util::vec result{};
+    result.reserve(_num);
+    if(_type == unb) {
+        // x = x+ - x-
+        for(int i=0; i<_num; i++) {
+            result[i] = sol.at(i) - sol.at(_num+i);
+        }
+    }
+    else {
+        // x = x+
+        std::transform(sol.begin(), sol.begin()+_num, result.begin(),
+        [](double val){return val;});
+    }
+
+    return result;
 }
 
 // Constraints

@@ -39,13 +39,14 @@ class Simplex {
         const VarType _type;
         util::matrix _lhs; // Each row has length _num
         util::vec _rhs;
-        int _slack_counter=0; // Each time an inequality constraint is added, needs to add as many slack variables; the final matrix then needs to be rectangular, with column length _num + _slack_counter (i.e. add 0's where necessary)
-        
+        int _s_length=0; // Each time an inequality constraint is added, needs to add as many slack variables; the final matrix then needs to be rectangular, with column length _num + _s_length (i.e. add 0's where necessary)
+
         // util::vec _x_pos, _x_neg, _s; // positive/negative part, slack - not needed to keep track of since the value is computed only in the end
 
         public:
         Variable(int num, VarType var_type);
 
+        // [pref] Many constraints -> potentially a lot of sparse matrices, inefficient
         void addConstraint(util::matrix lhs, util::vec rhs, ConstrType constr_type = equal);
 
         // [perf] move the own lhs/rhs values and invalidate them -> no longer needed
