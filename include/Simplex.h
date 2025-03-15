@@ -121,6 +121,9 @@ class Simplex {
     /// @brief Solves the system in the standard form min c^t*x, s.t. Ax=b, x>=0, *provided* the valid initial point
     static std::pair<util::vec, Simplex::Status> solve(util::matrix&& lhs, util::vec&& rhs, util::vec&& obj, util::vec&& init);
 
+    /// @brief Provided the solution with all reformulations of the variables and slack variables, original vector value
+    util::vec distillSolution(const util::vec& sol_slack);
+
 };
 
 #endif // _SIMPLEX

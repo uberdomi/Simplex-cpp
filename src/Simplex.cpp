@@ -199,13 +199,14 @@ std::pair<util::vec, Simplex::Status> Simplex::solve() {
 
     // TODO distill solution
     if(init.second != optimal) {
-        return {}
+        return {distillSolution(init.first), infeasible};
     }
 
     // TODO distill solution
     // Initial point : discard slack from the initial solution
-    return solve(std::move(_A), std::move(_b), std::move(_c), util::subvector(init.first, 0, m));
+    std::pair<util::vec, Simplex::Status> final = solve(std::move(_A), std::move(_b), std::move(_c), util::subvector(init.first, 0, m));
 
+    return {distillSolution(final.first), final.second};
 }
 
 // Constraints
@@ -535,4 +536,27 @@ void Simplex::setup() {
     if(!validSystem()) {
         throw std::runtime_error("Optimization system invalid!");
     }
+}
+
+util::vec Simplex::distillSolution(const util::vec& sol_slack) {
+    util::vec sol{};
+
+    int start=0;
+    int end=0;
+    std::string alias{};
+    for (int i=0; i<_var_starts.size(); i++) {
+        alias = _var_starts.at(i).first;
+        start = _var_starts.at(i).second;
+        if(i+1 < _var_starts.size()) {
+            end = start = _var_starts.at(i+1).second;
+        }
+        else {
+            end = sol_slack.size();
+        }
+
+        // Distill the value from the subvector of the solution vecotr, corresponding to the variable associated with the alias
+        util::append(sol, _vars.at(alias)->getValue(util::subvector(sol_slack, start, end)));
+    }
+    
+    return sol;
 }
