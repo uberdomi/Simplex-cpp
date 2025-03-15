@@ -7,6 +7,7 @@ int main(int argc, char** argv) {
     // util::matrix A{{1,2,3}, {2,1,3}, {7,4,2}};
     // util::print(A);
 
+    // ----- Matrix Examples -----
     Matrix A = Matrix({{1,2,3}, {2,1,3}, {-6,-4,2}});
     A.print();
 
@@ -48,14 +49,16 @@ int main(int argc, char** argv) {
     util::vec b0{15,7,15};
     util::vec c0{2,2};
     // Considering the LP min(x) c^t*x s.t. A*x<=0, x>=0
+
     Simplex model{};
-    model.addConstraints(A0,b0);
-    model.setMaximization(c0);
-    auto [sol_slack, status] = model.solve();
 
-    util::print(sol_slack.first);
+    model.addVariables("x", 2, pos);
+    model.addConstraints("x", A0, b0, leq);
+    model.addObjective("x", c0, min);
 
-    util::print(sol_slack.second);
+    auto [sol, status] = model.solve();
+
+    util::print(sol);
 
     return 0;
 }

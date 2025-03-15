@@ -42,3 +42,4 @@ KKT conditions:
 3) Update step: if ShermanMorrison fails choose a different i_N until successful - if not successful, then idk, something is BAD
 4) Do some refactoring
 - improve performance
+5) Update todo and move to readme
