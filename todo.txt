@@ -33,6 +33,10 @@ KKT conditions:
 7) Repeat
 
 --- TODO:
+Migrate functionalites to LinAlg : matrix operations ; solving SLE's
+LinAlg testing with Catch2
+LinAlg incorporation into Simplex
+
 1) Generalize problem: various constraints/variables to be added
 - Not only Ax<=b, but also Ax=b, x not necessarily >=0
 - Translate to the standard form, x any <=> x=x+ - x-, x+, x- >=0

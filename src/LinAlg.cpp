@@ -9,11 +9,11 @@ using matrix = la::matrix;
 
 // Comparisons
 
-bool la::isEqual(const double& x, const double& y, const double& tol=1e-6) {
+bool la::isEqual(const double& x, const double& y, const double& tol) {
     return std::abs(x-y) < tol;
 }
 
-bool la::isEqual(const vec& v, const vec& w, const double& tol=1e-6){
+bool la::isEqual(const vec& v, const vec& w, const double& tol){
     int n = v.size();
     if(w.size() != n) {
         return false;
@@ -26,7 +26,7 @@ bool la::isEqual(const vec& v, const vec& w, const double& tol=1e-6){
     return true;
 }
 
-bool la::isEqual(const matrix& A, const matrix& B, const double& tol=1e-6){
+bool la::isEqual(const matrix& A, const matrix& B, const double& tol){
     int n = A.size();
     if(B.size() != n) {
         return false;
@@ -259,31 +259,158 @@ matrix la::operator|(const matrix& A, const vec& v){
 
 
 // Vector operations
-vec la::add(const vec& v, const vec& w);
-vec la::operator+(const vec& v, const vec& w);
-void la::add_inplace(vec& v, const vec& w);
-vec& la::operator+=(vec& v, const vec& w);
+vec la::add(const vec& v, const vec& w) {
+    if(v.size() != w.size()) {
+        throw std::invalid_argument("Vectors have different lengths");
+    }
+    vec result(v.size(), 0.0);
 
-vec la::sub(const vec& v, const vec& w);
-vec la::operator-(const vec& v, const vec& w);
-void la::sub_inplace(vec& v, const vec& w);
-vec& la::operator-=(vec& v, const vec& w);
+    for(int i=0; i<v.size(); i++) {
+        result.at(i) = v.at(i) + w.at(i);
+    }
 
-vec la::scale(const vec& v, const double& sf);
-vec la::operator*(const vec& v, const double& sf);
-vec& la::scale_inplace(vec& v, const double& sf);
-vec& la::operator*=(vec& v, const double& sf);
+    return result;
+}
 
-double la::dot(const vec& v, const vec& w);
-double la::operator*(const vec& v, const vec& w);
+vec la::operator+(const vec& v, const vec& w) {
+    return la::add(v,w);
+}
 
-vec la::vecmult(const vec& v, const vec& w);
-vec la::operator%(const vec& v, const vec& w);
+void la::add_inplace(vec& v, const vec& w) {
+    if(v.size() != w.size()) {
+        throw std::invalid_argument("Vectors have different lengths");
+    }
+    for(int i=0; i<v.size(); i++) {
+        v.at(i) = v.at(i) + w.at(i);
+    }
+}
 
-matrix la::dyadic(const vec& v, const vec& w);
-vec la::operator&(const vec& v, const vec& w);
+vec& la::operator+=(vec& v, const vec& w){
+    la::add_inplace(v,w);
+    return v;
+}
 
-vec la::subvector(const vec& v, int start, int end); // End exclusive - as with iterators
+vec la::sub(const vec& v, const vec& w) {
+    if(v.size() != w.size()) {
+        throw std::invalid_argument("Vectors have different lengths");
+    }
+    vec result(v.size(), 0.0);
+
+    for(int i=0; i<v.size(); i++) {
+        result.at(i) = v.at(i) - w.at(i);
+    }
+
+    return result;
+}
+
+vec la::operator-(const vec& v, const vec& w) {
+    return la::sub(v,w);
+}
+
+void la::sub_inplace(vec& v, const vec& w) {
+    if(v.size() != w.size()) {
+        throw std::invalid_argument("Vectors have different lengths");
+    }
+    for(int i=0; i<v.size(); i++) {
+        v.at(i) = v.at(i) - w.at(i);
+    }
+}
+
+vec& la::operator-=(vec& v, const vec& w){
+    la::sub_inplace(v,w);
+    return v;
+}
+
+vec la::scale(const vec& v, const double& sf) {
+    vec result = v;
+
+    for(int i=0; i<result.size(); i++) {
+        result.at(i) *= sf;
+    }
+
+    return result;
+}
+
+vec la::operator*(const vec& v, const double& sf) {
+    return la::scale(v,sf);
+}
+
+
+void la::scale_inplace(vec& v, const double& sf){
+    vec result = v;
+
+    for(int i=0; i<v.size(); i++) {
+        v.at(i) *= sf;
+    }
+}
+
+vec& la::operator*=(vec& v, const double& sf){
+    la::scale_inplace(v,sf);
+    return v;
+}
+
+double la::dot(const vec& v, const vec& w) {
+    if(v.size() != w.size()) {
+        throw std::invalid_argument("Vectors have different lengths");
+    }
+    double sum{0.0};
+    for(int i=0; i<v.size(); i++) {
+        sum += v.at(i)*w.at(i);
+    }
+
+    return sum;
+}
+double la::operator*(const vec& v, const vec& w){
+    return la::dot(v,w);
+}
+
+vec la::vecmult(const vec& v, const vec& w) {
+    if(v.size() != w.size()) {
+        throw std::invalid_argument("Vectors have different lengths");
+    }
+
+    vec result = v;
+    for(int i=0; i<v.size(); i++) {
+        result.at(i) *= w.at(i);
+    }
+
+    return result;
+}
+vec la::operator&(const vec& v, const vec& w){
+    return la::vecmult(v,w);
+}
+
+matrix la::dyadic(const vec& v, const vec& w) {
+    matrix vw(v.size(), vec(w.size(), 0.0));
+    for(int i=0; i<v.size(); i++) {
+        for(int j=0; j<w.size(); j++) {
+            vw.at(i).at(j) = v.at(i)*w.at(j);
+        }
+    }
+
+    return vw;
+}
+matrix la::operator%(const vec& v, const vec& w) {
+    return la::dyadic(v,w);
+}
+
+vec la::subvector(const vec& v, int start, int end) {
+    if(start < 0 || end > v.size()) {
+        throw std::invalid_argument("The provided indices are out of range!");
+    }
+
+    if(end <= start) {
+        throw std::invalid_argument("The start iterator must be before the end!");
+    }
+
+    vec result;
+    result.reserve(end - start);
+    std::transform(v.begin() + start, v.begin() + end, result.begin(), [](const double& val){
+        return val;
+    });
+
+    return result;
+}   
 
 // --- Matrix operations
 // Basic

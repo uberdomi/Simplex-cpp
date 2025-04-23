@@ -69,7 +69,7 @@ namespace la {
 
     vec scale(const vec& v, const double& sf);
     vec operator*(const vec& v, const double& sf);
-    vec& scale_inplace(vec& v, const double& sf);
+    void scale_inplace(vec& v, const double& sf);
     vec& operator*=(vec& v, const double& sf);
 
     double dot(const vec& v, const vec& w);
@@ -78,11 +78,11 @@ namespace la {
 
     vec vecmult(const vec& v, const vec& w);
     /// @brief Compute the entry wise product of 2 vectors
-    vec operator%(const vec& v, const vec& w);
+    vec operator&(const vec& v, const vec& w);
 
     matrix dyadic(const vec& v, const vec& w);
     /// @brief Compute the dyadic product of 2 vectors
-    vec operator&(const vec& v, const vec& w);
+    matrix operator%(const vec& v, const vec& w);
 
     vec subvector(const vec& v, int start, int end); // End exclusive - as with iterators
 
