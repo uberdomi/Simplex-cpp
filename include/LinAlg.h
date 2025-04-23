@@ -36,16 +36,25 @@ namespace la {
     matrix t(const matrix& A);
 
     // Glueing matrices
-    void append(matrix& A, matrix&& B); // [A^t | B^t]^t
-    void append(matrix& A, vec&& v); // Adding new row
-    void append(vec& v, vec&& w);
+    void append(matrix& A, const matrix& B); // [A^t | B^t]^t
+    matrix operator^(const matrix& A, const matrix& B);
+    matrix& operator^=(matrix& A, const matrix& B);
 
-    matrix operator^(const matrix& A, const matrix& B); // [A^t | B^t]^t
+    void append(matrix& A, const vec& v); // Adding new row
+    matrix operator^(const matrix& A, const vec& v);
+    matrix& operator^=(matrix& A, const vec& v);
 
-    void conc(matrix& A, matrix&& B); // [A | B]
-    void conc(matrix& A, vec&& v); // Adding to each row
+    void conc(vec& v, const vec& w);
+    vec operator|(const vec& v, const vec& w);
+    vec& operator|=(vec& v, const vec& w);
 
-    matrix operator|(const matrix& A, const matrix& B); // [A | B]
+    void conc(matrix& A, const matrix& B); // [A | B]
+    matrix operator|(const matrix& A, const matrix& B);
+    matrix& operator|=(matrix& A, const matrix& B);
+
+    void conc(matrix& A, const vec& v); // Adding to each row
+    matrix operator|(const matrix& A, const vec& v);
+    matrix& operator|=(matrix& A, const vec& v);
 
     // Vector operations
     vec add(const vec& v, const vec& w);
