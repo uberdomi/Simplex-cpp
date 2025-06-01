@@ -87,6 +87,11 @@ namespace la {
     vec subvector(const vec& v, int start, int end); // End exclusive - as with iterators
 
     // --- Matrix operations
+
+    // Sums along axes
+    vec rowSum(const matrix& A);
+    vec colSum(const matrix& A);
+
     // Basic
     matrix add(const matrix& A, const matrix& B);
     matrix operator+(const matrix& A, const matrix& B);
@@ -122,10 +127,34 @@ namespace la {
     std::pair<double, matrix> gauss(const matrix& LHS, matrix&& RHS); // perform the gauss algorithm, getting det. and inv. together
     std::pair<double, matrix> gauss(const matrix& LHS, const vec& RHS);
 
-    // TODO also include some special easier cases, like unit vectors
-    /// @brief
-    /// @return 
+    /// @brief Apply the Sherman-Morrison formula to compute the inverse of a matrix A modified by a rank-1 update uv^T, i.e. we are looking for (A + u*v^t)^-1 = A^-1 - (A^-1 * u * v^T * A^-1) / (1 + v^T * A^-1 * u)
+    /// @param A_inv The inverse of the original matrix A
+    /// @param A_inv_u The product of the inverse of A and vector u
+    /// @param v_T_A_inv The product of the transpose of vector v and the inverse of A
+    /// @param denominator The denominator of the Sherman-Morrison formula
+    /// @return The inverse of the modified matrix
+    matrix ShermanMorrisonFull(const matrix& A_inv, const vec& A_inv_u, const vec& v_T_A_inv, const double denominator);
+
+    /// @brief Apply the Sherman-Morrison formula to compute the inverse of a matrix A modified by a rank-1 update uv^T. This is the standard formula, i.e. we are looking for (A + u*v^t)^-1 = A^-1 - (A^-1 * u * v^T * A^-1) / (1 + v^T * A^-1 * u)
+    /// @param A The original matrix
+    /// @param u The column vector u in the rank-1 update
+    /// @param v The row vector v in the rank-1 update
+    /// @return The inverse of the modified matrix
     matrix ShermanMorrison(const matrix& A, const vec& u, const vec& v);
+
+    /// @brief Swap rows i_A and i_B of matrices A and B
+    matrix ShermanMorrisonInv(const matrix& A_inv, const vec& u, const vec& v);
+
+    /// @brief Perform the Sherman-Morrison formula for a row vector v, that is added to each row of A, wich corresponds to the situation where u is the one vector
+    matrix ShermanMorrisonRow(const matrix& A, const vec& v);
+
+    /// @brief Perform the Sherman-Morrison formula for a column vector u, that is added to each column of A, wich corresponds to the situation where v is the one vector
+    matrix ShermanMorrisonCol(const matrix& A, const vec& u);
+
+    matrix ShermanMorrisonRowInv(const matrix& A_inv, const vec& v);
+
+    matrix ShermanMorrisonColInv(const matrix& A_inv, const vec& u);
+
 
     // Helper
     void swapRows(matrix& A, matrix& B, const int& i_A, const int& i_B);

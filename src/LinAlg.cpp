@@ -422,6 +422,38 @@ void la::subtractVec(vec& v, const vec& w, const double& sf) {
 }
 
 // --- Matrix operations
+// Sums along axes
+vec rowSum(const matrix& A) {
+    if(A.empty()) {
+        throw std::invalid_argument("Matrix is empty");
+    }
+    
+    vec result(A.size(), 0.0);
+    for(int i = 0; i < A.size(); i++) {
+        for(int j = 0; j < A[0].size(); j++) {
+            result[i] += A[i][j];
+        }
+    }
+    return result;
+}
+
+vec colSum(const matrix& A) {
+    if(A.empty() || A[0].empty()) {
+        throw std::invalid_argument("Matrix is empty");
+    }
+    
+    vec result(A[0].size(), 0.0);
+    for(const vec& row : A) {
+        if(row.size() != result.size()) {
+            throw std::invalid_argument("Incompatible dimensions for column sum");
+        }
+        for(int j = 0; j < row.size(); j++) {
+            result[j] += row[j];
+        }
+    }
+    return result;
+}
+
 // Basic
 matrix la::add(const matrix& A, const matrix& B) {
     if(A.size() != B.size() || A[0].size() != B[0].size()) {
@@ -651,13 +683,9 @@ vec la::operator/(const matrix& A, const vec& v) {
     return la::solve(A, v);
 }
 
-matrix la::ShermanMorrison(const matrix& A, const vec& u, const vec& v) {
-    // Sherman-Morrison formula: (A + uv^T)^-1 = A^-1 - (A^-1 u v^T A^-1) / (1 + v^T A^-1 u)
-    matrix A_inv = la::inv(A);
-    vec A_inv_u = A_inv * u;
-    vec v_T_A_inv = la::mult(la::t(la::vecAsMatrix(v)), A_inv)[0];
-    double denominator = 1.0 + la::dot(v, A_inv_u);
-    
+matrix la::ShermanMorrisonFull(const matrix& A_inv, const vec& A_inv_u, const vec& v_T_A_inv, const double denominator) {
+    // Sherman-Morrison formula: (A + uv^T)^-1 = A^-1 - (A^-1 u v^T A^-1) / (1 + v^T A^-1 u) = A_inv - (A_inv_u * v_T_A_inv) / denominator
+
     if(std::abs(denominator) < 1e-12) {
         throw std::runtime_error("Sherman-Morrison formula is not applicable (denominator is zero)");
     }
@@ -666,6 +694,58 @@ matrix la::ShermanMorrison(const matrix& A, const vec& u, const vec& v) {
     la::scale_inplace(correction, 1.0 / denominator);
     
     return A_inv - correction;
+}
+
+matrix la::ShermanMorrison(const matrix& A, const vec& u, const vec& v) {
+    // Sherman-Morrison formula: (A + uv^T)^-1 = A^-1 - (A^-1 u v^T A^-1) / (1 + v^T A^-1 u)
+    matrix A_inv = la::inv(A);
+    vec A_inv_u = A_inv * u;
+    vec v_T_A_inv = la::t(A_inv) * v;
+    double denominator = 1.0 + la::dot(v, A_inv_u);
+
+    return la::ShermanMorrisonFull(A_inv, A_inv_u, v_T_A_inv, denominator);
+}
+
+matrix ShermanMorrisonInv(const matrix& A_inv, const vec& u, const vec& v) {
+    vec A_inv_u = la::mult(A_inv, u);
+    vec v_T_A_inv = la::mult(la::t(A_inv), v);
+    double denominator = 1.0 + la::dot(v, A_inv_u);
+
+    return la::ShermanMorrisonFull(A_inv, A_inv_u, v_T_A_inv, denominator);
+}
+
+matrix ShermanMorrisonRow(const matrix& A, const vec& v) {
+    matrix A_inv = la::inv(A);
+    vec A_inv_u = la::colSum(A_inv);
+    vec v_T_A_inv = la::mult(la::t(A_inv), v);
+    double denominator = 1.0 + la::dot(v, A_inv_u);
+
+    return la::ShermanMorrisonFull(A_inv, A_inv_u, v_T_A_inv, denominator);
+}
+
+matrix ShermanMorrisonCol(const matrix& A, const vec& u) {
+    matrix A_inv = la::inv(A);
+    vec A_inv_u = la::mult(A_inv, u);
+    vec v_T_A_inv = la::rowSum(A_inv);
+    double denominator = 1.0 + la::dot(v_T_A_inv, u);
+
+    return la::ShermanMorrisonFull(A_inv, A_inv_u, v_T_A_inv, denominator);
+}
+
+matrix ShermanMorrisonRowInv(const matrix& A_inv, const vec& v) {
+    vec A_inv_u = la::colSum(A_inv);
+    vec v_T_A_inv = la::mult(la::t(A_inv), v);
+    double denominator = 1.0 + la::dot(v, A_inv_u);
+
+    return la::ShermanMorrisonFull(A_inv, A_inv_u, v_T_A_inv, denominator);
+}
+
+matrix ShermanMorrisonColInv(const matrix& A_inv, const vec& u) {
+    vec A_inv_u = la::mult(A_inv, u);
+    vec v_T_A_inv = la::rowSum(A_inv);
+    double denominator = 1.0 + la::dot(v_T_A_inv, u);
+
+    return la::ShermanMorrisonFull(A_inv, A_inv_u, v_T_A_inv, denominator);
 }
 
 // Helper
