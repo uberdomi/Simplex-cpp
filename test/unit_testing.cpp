@@ -7,6 +7,17 @@
 using namespace la;
 using Catch::Approx;
 
+// --- Helper Functions
+
+// Helper function to check if vectors are approximately equal
+bool approxEqual(const vec& v, const vec& w, double tolerance = 1e-10) {
+    if (v.size() != w.size()) return false;
+    for (size_t i = 0; i < v.size(); ++i) {
+        if (std::abs(v[i] - w[i]) > tolerance) return false;
+    }
+    return true;
+}
+
 // Helper function to check if matrices are approximately equal
 bool approxEqual(const matrix& A, const matrix& B, double tolerance = 1e-10) {
     if (A.size() != B.size()) return false;
@@ -19,14 +30,7 @@ bool approxEqual(const matrix& A, const matrix& B, double tolerance = 1e-10) {
     return true;
 }
 
-// Helper function to check if vectors are approximately equal
-bool approxEqual(const vec& v, const vec& w, double tolerance = 1e-10) {
-    if (v.size() != w.size()) return false;
-    for (size_t i = 0; i < v.size(); ++i) {
-        if (std::abs(v[i] - w[i]) > tolerance) return false;
-    }
-    return true;
-}
+// --- Unit Tests
 
 TEST_CASE("Vector Operations", "[vector]") {
     vec v1 = {1.0, 2.0, 3.0};
