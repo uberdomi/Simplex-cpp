@@ -35,7 +35,12 @@ KKT conditions:
 --- TODO:
 Migrate functionalites to LinAlg : matrix operations ; solving SLE's
 LinAlg testing with Catch2
+Delete former utilities
 LinAlg incorporation into Simplex
+Unit tests for simplex - simple examples to test for feasibility
+Main function + Stigler
+Incorporate into an App - e.g. add more visual examples
+Readme somewhere in-between or at the end
 
 1) Generalize problem: various constraints/variables to be added
 - Not only Ax<=b, but also Ax=b, x not necessarily >=0
