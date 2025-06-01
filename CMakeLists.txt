@@ -20,3 +20,20 @@ add_executable(main src/main.cpp)
 
 # Link the library to the executable
 target_link_libraries(main PRIVATE LinAlg)
+
+# Fetch Catch2
+include(FetchContent)
+FetchContent_Declare(
+  Catch2
+  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+  GIT_TAG        v3.4.0  # or any tag you want
+)
+FetchContent_MakeAvailable(Catch2)
+
+# Add test executable
+add_executable(unit_tests test/unit_testing.cpp)
+target_link_libraries(unit_tests PRIVATE LinAlg Catch2::Catch2WithMain)
+
+# Enable testing
+enable_testing()
+add_test(NAME LinAlgTests COMMAND unit_tests)
