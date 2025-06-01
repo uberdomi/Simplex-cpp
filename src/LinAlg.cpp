@@ -162,9 +162,7 @@ void la::append(matrix& A, const matrix& B) {
 
     A.reserve(A.size() + B.size());
     // Append B to the end of A
-    std::transform(B.begin(), B.end(), A.end(), [](const vec& row) {
-        return row;
-    });
+    A.insert(A.end(), B.begin(), B.end());
 }
 
 matrix& la::operator^=(matrix& A, const matrix& B) {
@@ -199,9 +197,7 @@ matrix la::operator^(const matrix& A, const vec& v) {
 void la::conc(vec& v, const vec& w) {
     v.reserve(v.size() + w.size());
     // Append w to the end of v
-    std::transform(w.begin(), w.end(), v.end(), [](double& val) {
-        return val;
-    });
+    v.insert(v.end(), w.begin(), w.end());
 }
 
 vec& la::operator|=(vec& v, const vec& w) {
@@ -403,52 +399,279 @@ vec la::subvector(const vec& v, int start, int end) {
         throw std::invalid_argument("The start iterator must be before the end!");
     }
 
-    vec result;
-    result.reserve(end - start);
-    std::transform(v.begin() + start, v.begin() + end, result.begin(), [](const double& val){
-        return val;
-    });
+    vec result(end - start);
+    std::copy(v.begin() + start, v.begin() + end, result.begin());
 
     return result;
 }   
 
+// Vector manipulations
+void la::scaleVec(vec& v, const double& sf) {
+    for(double& val : v) {
+        val *= sf;
+    }
+}
+
+void la::subtractVec(vec& v, const vec& w, const double& sf) {
+    if(v.size() != w.size()) {
+        throw std::invalid_argument("Vectors have different lengths");
+    }
+    for(int i = 0; i < v.size(); i++) {
+        v[i] -= sf * w[i];
+    }
+}
+
 // --- Matrix operations
 // Basic
-matrix la::add(const matrix& A, const matrix& B);
-matrix la::operator+(const matrix& A, const matrix& B);
-void la::add_inplace(matrix& A, const matrix& B);
-matrix& la::operator+=(matrix& A, const matrix& B);
+matrix la::add(const matrix& A, const matrix& B) {
+    if(A.size() != B.size() || A[0].size() != B[0].size()) {
+        throw std::invalid_argument("Matrices have incompatible dimensions");
+    }
+    matrix result(A.size(), vec(A[0].size(), 0.0));
+    for(int i = 0; i < A.size(); i++) {
+        for(int j = 0; j < A[0].size(); j++) {
+            result[i][j] = A[i][j] + B[i][j];
+        }
+    }
+    return result;
+}
 
-matrix la::sub(const matrix& A, const matrix& B);
-matrix la::operator-(const matrix& A, const matrix& B);
-void la::sub_inplace(matrix& A, const matrix& B);
-matrix& la::operator-=(matrix& A, const matrix& B);
+matrix la::operator+(const matrix& A, const matrix& B) {
+    return la::add(A, B);
+}
 
-matrix la::scale(const matrix& A, const double& sf);
-matrix la::operator*(const matrix& A, const double& sf);
-matrix& la::scale_inplace(matrix& A, const double& sf);
-matrix& la::operator*=(matrix& A, const double& sf);
+void la::add_inplace(matrix& A, const matrix& B) {
+    if(A.size() != B.size() || A[0].size() != B[0].size()) {
+        throw std::invalid_argument("Matrices have incompatible dimensions");
+    }
+    for(int i = 0; i < A.size(); i++) {
+        for(int j = 0; j < A[0].size(); j++) {
+            A[i][j] += B[i][j];
+        }
+    }
+}
+
+matrix& la::operator+=(matrix& A, const matrix& B) {
+    la::add_inplace(A, B);
+    return A;
+}
+
+matrix la::sub(const matrix& A, const matrix& B) {
+    if(A.size() != B.size() || A[0].size() != B[0].size()) {
+        throw std::invalid_argument("Matrices have incompatible dimensions");
+    }
+    matrix result(A.size(), vec(A[0].size(), 0.0));
+    for(int i = 0; i < A.size(); i++) {
+        for(int j = 0; j < A[0].size(); j++) {
+            result[i][j] = A[i][j] - B[i][j];
+        }
+    }
+    return result;
+}
+
+matrix la::operator-(const matrix& A, const matrix& B) {
+    return la::sub(A, B);
+}
+
+void la::sub_inplace(matrix& A, const matrix& B) {
+    if(A.size() != B.size() || A[0].size() != B[0].size()) {
+        throw std::invalid_argument("Matrices have incompatible dimensions");
+    }
+    for(int i = 0; i < A.size(); i++) {
+        for(int j = 0; j < A[0].size(); j++) {
+            A[i][j] -= B[i][j];
+        }
+    }
+}
+
+matrix& la::operator-=(matrix& A, const matrix& B) {
+    la::sub_inplace(A, B);
+    return A;
+}
+
+matrix la::scale(const matrix& A, const double& sf) {
+    matrix result = A;
+    for(int i = 0; i < result.size(); i++) {
+        for(int j = 0; j < result[0].size(); j++) {
+            result[i][j] *= sf;
+        }
+    }
+    return result;
+}
+
+matrix la::operator*(const matrix& A, const double& sf) {
+    return la::scale(A, sf);
+}
+
+matrix& la::scale_inplace(matrix& A, const double& sf) {
+    for(int i = 0; i < A.size(); i++) {
+        for(int j = 0; j < A[0].size(); j++) {
+            A[i][j] *= sf;
+        }
+    }
+    return A;
+}
+
+matrix& la::operator*=(matrix& A, const double& sf) {
+    return la::scale_inplace(A, sf);
+}
 
 // Multiplications
-vec la::mult(const matrix& A, const vec& v);
-vec la::operator*(const matrix& A, const vec& v);
+vec la::mult(const matrix& A, const vec& v) {
+    if(A[0].size() != v.size()) {
+        throw std::invalid_argument("Matrix and vector dimensions are incompatible");
+    }
+    vec result(A.size(), 0.0);
+    for(int i = 0; i < A.size(); i++) {
+        for(int j = 0; j < A[0].size(); j++) {
+            result[i] += A[i][j] * v[j];
+        }
+    }
+    return result;
+}
 
-matrix la::mult(const matrix& A, const matrix& B);
-matrix la::operator*(const matrix& A, const matrix& B);
+vec la::operator*(const matrix& A, const vec& v) {
+    return la::mult(A, v);
+}
+
+matrix la::mult(const matrix& A, const matrix& B) {
+    if(A[0].size() != B.size()) {
+        throw std::invalid_argument("Matrix dimensions are incompatible for multiplication");
+    }
+    matrix result(A.size(), vec(B[0].size(), 0.0));
+    for(int i = 0; i < A.size(); i++) {
+        for(int j = 0; j < B[0].size(); j++) {
+            for(int k = 0; k < A[0].size(); k++) {
+                result[i][j] += A[i][k] * B[k][j];
+            }
+        }
+    }
+    return result;
+}
+
+matrix la::operator*(const matrix& A, const matrix& B) {
+    return la::mult(A, B);
+}
 
 // Solving LSE's
-matrix la::inv(const matrix& A);
-matrix la::operator~(const matrix& A);
+std::pair<double, matrix> la::gauss(const matrix& LHS, matrix&& RHS) {
+    if(LHS.size() != LHS[0].size()) {
+        throw std::invalid_argument("LHS matrix must be square for Gaussian elimination");
+    }
+    
+    int n = LHS.size();
+    matrix A = LHS;  // Copy LHS
+    matrix B = std::move(RHS);  // Move RHS
+    double det = 1.0;
+    
+    // Forward elimination
+    for(int i = 0; i < n; i++) {
+        // Find pivot
+        int pivot = i;
+        for(int k = i + 1; k < n; k++) {
+            if(std::abs(A[k][i]) > std::abs(A[pivot][i])) {
+                pivot = k;
+            }
+        }
+        
+        // Swap rows if needed
+        if(pivot != i) {
+            std::swap(A[i], A[pivot]);
+            std::swap(B[i], B[pivot]);
+            det *= -1;
+        }
+        
+        // Check for zero pivot
+        if(std::abs(A[i][i]) < 1e-12) {
+            throw std::runtime_error("Matrix is singular");
+        }
+        
+        det *= A[i][i];
+        
+        // Eliminate column
+        for(int k = i + 1; k < n; k++) {
+            double factor = A[k][i] / A[i][i];
+            for(int j = i; j < n; j++) {
+                A[k][j] -= factor * A[i][j];
+            }
+            for(int j = 0; j < B[0].size(); j++) {
+                B[k][j] -= factor * B[i][j];
+            }
+        }
+    }
+    
+    // Back substitution
+    for(int i = n - 1; i >= 0; i--) {
+        for(int j = 0; j < B[0].size(); j++) {
+            for(int k = i + 1; k < n; k++) {
+                B[i][j] -= A[i][k] * B[k][j];
+            }
+            B[i][j] /= A[i][i];
+        }
+    }
+    
+    return std::make_pair(det, B);
+}
 
-double la::det(const matrix& A);
+std::pair<double, matrix> la::gauss(const matrix& LHS, const vec& RHS) {
+    matrix rhs_matrix = la::vecAsMatrix(RHS);
+    return la::gauss(LHS, std::move(rhs_matrix));
+}
 
-vec la::solve(const matrix& A, const vec& v);
-vec la::operator/(const matrix& A, const vec& v);
+matrix la::inv(const matrix& A) {
+    if(A.size() != A[0].size()) {
+        throw std::invalid_argument("Matrix must be square for inversion");
+    }
+    
+    matrix I = la::eye(A.size());
+    auto result = la::gauss(A, std::move(I));
+    return result.second;
+}
 
-std::pair<double, matrix> la::gauss(const matrix& LHS, matrix&& RHS); // perform the gauss algorithm, getting det. and inv. together
-std::pair<double, matrix> la::gauss(const matrix& LHS, const vec& RHS);
+matrix la::operator~(const matrix& A) {
+    return la::inv(A);
+}
 
-matrix la::ShermanMorrison(const matrix& A, const vec& u, const vec& v);
+double la::det(const matrix& A) {
+    if(A.size() != A[0].size()) {
+        throw std::invalid_argument("Matrix must be square for determinant calculation");
+    }
+    
+    matrix I = la::eye(A.size());
+    auto result = la::gauss(A, std::move(I));
+    return result.first;
+}
+
+vec la::solve(const matrix& A, const vec& v) {
+    auto result = la::gauss(A, v);
+    return la::matrixAsVec(result.second);
+}
+
+vec la::operator/(const matrix& A, const vec& v) {
+    return la::solve(A, v);
+}
+
+matrix la::ShermanMorrison(const matrix& A, const vec& u, const vec& v) {
+    // Sherman-Morrison formula: (A + uv^T)^-1 = A^-1 - (A^-1 u v^T A^-1) / (1 + v^T A^-1 u)
+    matrix A_inv = la::inv(A);
+    vec A_inv_u = A_inv * u;
+    vec v_T_A_inv = la::mult(la::t(la::vecAsMatrix(v)), A_inv)[0];
+    double denominator = 1.0 + la::dot(v, A_inv_u);
+    
+    if(std::abs(denominator) < 1e-12) {
+        throw std::runtime_error("Sherman-Morrison formula is not applicable (denominator is zero)");
+    }
+    
+    matrix correction = la::dyadic(A_inv_u, v_T_A_inv);
+    la::scale_inplace(correction, 1.0 / denominator);
+    
+    return A_inv - correction;
+}
 
 // Helper
-void la::swapRows(matrix& A, matrix& B, const int& i_A, const int& i_B);
+void la::swapRows(matrix& A, matrix& B, const int& i_A, const int& i_B) {
+    if(i_A < 0 || i_A >= A.size() || i_B < 0 || i_B >= B.size()) {
+        throw std::invalid_argument("Row indices are out of bounds");
+    }
+    std::swap(A[i_A], B[i_B]);
+}
