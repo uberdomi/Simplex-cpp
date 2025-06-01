@@ -115,7 +115,8 @@ namespace la {
     matrix mult(const matrix& A, const matrix& B);
     matrix operator*(const matrix& A, const matrix& B);
 
-    // Solving LSE's
+    // --- Solving LSE's
+    
     matrix inv(const matrix& A);
     matrix operator~(const matrix& A);
 
@@ -126,6 +127,8 @@ namespace la {
 
     std::pair<double, matrix> gauss(const matrix& LHS, matrix&& RHS); // perform the gauss algorithm, getting det. and inv. together
     std::pair<double, matrix> gauss(const matrix& LHS, const vec& RHS);
+
+    // --- Sherman-Morrison formula
 
     /// @brief Apply the Sherman-Morrison formula to compute the inverse of a matrix A modified by a rank-1 update uv^T, i.e. we are looking for (A + u*v^t)^-1 = A^-1 - (A^-1 * u * v^T * A^-1) / (1 + v^T * A^-1 * u)
     /// @param A_inv The inverse of the original matrix A
@@ -156,7 +159,7 @@ namespace la {
     matrix ShermanMorrisonColInv(const matrix& A_inv, const vec& u);
 
 
-    // Helper
+    // --- Helper
     void swapRows(matrix& A, matrix& B, const int& i_A, const int& i_B);
 } 
 

@@ -167,6 +167,7 @@ void la::append(matrix& A, const matrix& B) {
 
 matrix& la::operator^=(matrix& A, const matrix& B) {
     la::append(A,B);
+    return A;
 }
 
 matrix la::operator^(const matrix& A, const matrix& B) {
@@ -423,7 +424,7 @@ void la::subtractVec(vec& v, const vec& w, const double& sf) {
 
 // --- Matrix operations
 // Sums along axes
-vec rowSum(const matrix& A) {
+vec la::rowSum(const matrix& A) {
     if(A.empty()) {
         throw std::invalid_argument("Matrix is empty");
     }
@@ -437,7 +438,7 @@ vec rowSum(const matrix& A) {
     return result;
 }
 
-vec colSum(const matrix& A) {
+vec la::colSum(const matrix& A) {
     if(A.empty() || A[0].empty()) {
         throw std::invalid_argument("Matrix is empty");
     }
