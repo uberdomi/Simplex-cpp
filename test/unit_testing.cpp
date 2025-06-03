@@ -105,7 +105,7 @@ TEST_CASE("Vector Operations", "[vector]") {
     
     SECTION("Vector Concatenation") {
         vec v = v1;
-        conc(v, v2);
+        append(v, v2);
         vec expected = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
         REQUIRE(approxEqual(v, expected));
         
