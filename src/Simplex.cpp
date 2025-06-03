@@ -189,7 +189,11 @@ std::pair<la::vec, Simplex::Status> Simplex::solve() {
     int m = _c.size();
 
     // Solve the initial feasibility problem >> min s << s.t. [A|I]*[x|s]^t = b, x,s >= 0
-    la::matrix A_init = (Matrix(_A) | la::eye(n)).get();
+    la::matrix A_init = _A;
+    la::conc(
+        A_init, // Original constraints
+        la::eye(n) // Slack variables
+    );
     la::vec b_init = _b;
     la::vec c_init = la::vec(m, 0.0);
     la::append(c_init, la::vec(n, 1.0)); // Minimize the slack variables
@@ -270,7 +274,9 @@ void Simplex::setup() {
         la::append(_c,std::move(c));
         if(iter > 0){
             // Append the 0's
-            A = (Matrix(la::zeros(A.size(), iter)) | A).get();
+            la::matrix tmp = la::zeros(A.size(), iter);
+            la::append(tmp, A); // [0's | A]
+            A = std::move(tmp);
         }
         la::append(_A,std::move(A));
 
@@ -354,7 +360,7 @@ std::pair<la::vec, Simplex::Status> Simplex::solve(la::matrix&& lhs, la::vec&& r
     std::cout << "n: " << n << ", m: " << m << std::endl;
 
     // Get the initial matrices in the *column representation*
-    la::matrix lhs_col = Matrix(lhs).T().get(); // now each row corresponds to the column
+    la::matrix lhs_col = la::t(lhs);
 
     // --- Initialize variables
 
@@ -406,14 +412,14 @@ std::pair<la::vec, Simplex::Status> Simplex::solve(la::matrix&& lhs, la::vec&& r
     // --- Initialize Matrices
 
     // Use matrices with the *column representation*
-    Matrix A_B_t = Matrix(a_B);
+    la::matrix A_B_t = a_B;
     std::cout << "----- A_B_t -----" << std::endl;
-    A_B_t.print();
-    Matrix A_N_t = Matrix(a_N);
+    la::print(A_B_t);
+    la::matrix A_N_t = a_N;
     std::cout << "----- A_N_t -----" << std::endl;
-    A_N_t.print();
+    la::print(A_N_t);
 
-    Matrix A_inv = A_B_t.inv();
+    la::matrix A_inv = la::inv(A_B_t);
 
     int i_N{0}, i_B{0}; // indices to be swapped in each iteration
     // Sets/structures affected:
@@ -434,11 +440,11 @@ std::pair<la::vec, Simplex::Status> Simplex::solve(la::matrix&& lhs, la::vec&& r
         // --- Start Printing
         std::cout << "-> Iteration " << (iter+1) << " out of " << maxiter << std::endl;
         std::cout << "----- A_B_t -----" << std::endl;
-        A_B_t.print();
+        la::print(A_B_t);
         std::cout << "----- A_N_t -----" << std::endl;
-        A_N_t.print();
+        la::print(A_N_t);
         std::cout << "----- A_inv -----" << std::endl;
-        A_inv.print();
+        la::print(A_inv);
         std::cout << "----- x_B -----" << std::endl;
         la::print(x_B);
         std::cout << "----- s_N -----" << std::endl;
@@ -448,12 +454,12 @@ std::pair<la::vec, Simplex::Status> Simplex::solve(la::matrix&& lhs, la::vec&& r
 
         // --- Start Iteration calculations
         // 1) l = A_B^(-t)*c_B
-        lambda = A_B_t.solve(c_B);
+        lambda = la::solve(A_B_t, c_B);
         std::cout << "-- lambda --" << std::endl;
         la::print(lambda);
 
         // 2) s_N = c_N - A_N^t*l
-        s_N = la::sub(c_N, A_N_t * lambda);
+        s_N = la::sub(c_N, la::mult(A_N_t, lambda));
         std::cout << "-- s_N --" << std::endl;
         la::print(s_N);
         // --- End Iteration calculations
@@ -483,7 +489,7 @@ std::pair<la::vec, Simplex::Status> Simplex::solve(la::matrix&& lhs, la::vec&& r
 
         // 4) Let d = A_B^(-1)A_q
         // - If d <= 0 -> problem unbounded. Otherwise consider i : d_i > 0
-        d = A_inv * A_N_t.getRow(i_N);
+        d = la::mult(A_inv, la::getRow(A_N_t, i_N)); // A_inv * A_N_t.getRow(i_N) -> d = A_B^(-1) * A_N_t.getRow(i_N)
         // d = A_B_t.T().solve(A_N_t.getRow(i_N));
 
         std::cout << "-- d --" << std::endl;
@@ -533,7 +539,8 @@ std::pair<la::vec, Simplex::Status> Simplex::solve(la::matrix&& lhs, la::vec&& r
         // v = [0 ... 1 ... 0], at i_B-th entry
         la::vec v(m, 0.0);
         v.at(i_B) = 1.0;
-        A_inv = std::move(A_inv.ShermanMorrison(la::sub(A_N_t.getRow(i_N), A_B_t.getRow(i_B)), v));
+        la::vec tmp = la::sub(la::getRow(A_N_t, i_N), la::getRow(A_B_t, i_B));
+        A_inv = la::ShermanMorrisonInv(A_inv, std::move(tmp), v);
 
         // Sets/structures affected:
         // N <-> B
@@ -542,7 +549,7 @@ std::pair<la::vec, Simplex::Status> Simplex::solve(la::matrix&& lhs, la::vec&& r
         // s_N and x_B NOT since the counterparts are just 0
         std::swap(N_set.at(i_N), B_set.at(i_B));
         std::swap(c_N.at(i_N), c_B.at(i_B));
-        Matrix::swapRows(A_N_t, A_B_t, i_N, i_B);
+        la::swapRows(A_N_t, A_B_t, i_N, i_B);
         // --- End Swapping and Updating
 
     }
