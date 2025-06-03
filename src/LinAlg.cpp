@@ -195,14 +195,14 @@ matrix la::operator^(const matrix& A, const vec& v) {
     return C;
 }
 
-void la::conc(vec& v, const vec& w) {
+void la::append(vec& v, const vec& w) {
     v.reserve(v.size() + w.size());
     // Append w to the end of v
     v.insert(v.end(), w.begin(), w.end());
 }
 
 vec& la::operator|=(vec& v, const vec& w) {
-    la::conc(v,w);
+    la::append(v,w);
     return v;
 }
 
@@ -755,4 +755,22 @@ void la::swapRows(matrix& A, matrix& B, const int& i_A, const int& i_B) {
         throw std::invalid_argument("Row indices are out of bounds");
     }
     std::swap(A[i_A], B[i_B]);
+}
+
+vec la::getRow(const matrix& A, const int& i) {
+    if(i < 0 || i >= A.size()) {
+        throw std::invalid_argument("Row index is out of bounds");
+    }
+    return A[i];
+}
+
+vec la::getCol(const matrix& A, const int& i) {
+    if(i < 0 || i >= A[0].size()) {
+        throw std::invalid_argument("Column index is out of bounds");
+    }
+    vec col(A.size(), 0.0);
+    for(int j = 0; j < A.size(); j++) {
+        col[j] = A[j][i];
+    }
+    return col;
 }
