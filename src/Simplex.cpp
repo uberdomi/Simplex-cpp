@@ -1,6 +1,5 @@
 #include "Simplex.h"
-#include "Matrix.h"
-#include "Utils.h"
+#include "LinAlg.h"
 
 #include <stdexcept>
 #include <algorithm>
@@ -15,7 +14,7 @@ Simplex::Variable::Variable(int num, VarType var_type) : _num(num), _type{var_ty
     }
 }
 
-void Simplex::Variable::addConstraint(util::matrix lhs, util::vec rhs, ConstrType type) {
+void Simplex::Variable::addConstraint(la::matrix lhs, la::vec rhs, ConstrType type) {
     Simplex::checkSystem(lhs,rhs);
     if(lhs.at(0).size() != _num) {
         throw std::invalid_argument("Matrix doesn't correspond to the variable length!");
@@ -24,69 +23,69 @@ void Simplex::Variable::addConstraint(util::matrix lhs, util::vec rhs, ConstrTyp
     if (_type == unb) {
         // Needs to account for x = x+ - x-
         // Ax = b <=> [A | -A] [x+^t | x-^t]^t = b
-        lhs = (Matrix(lhs) | (Matrix(lhs) * (-1))).get();
+        la::conc(lhs, la::scale(lhs, -1.0));
     }
 
     switch(type) {
         case equal: {
             // Ax = b - canonical form
             // Append A to the end of _lhs, i.e. A_new = [A_old^t | A^t]^t
-            util::append(_lhs, std::move(lhs));
-            util::append(_rhs, std::move(rhs));
+            la::append(_lhs, std::move(lhs));
+            la::append(_rhs, std::move(rhs));
             return;
         };
         case leq: {
             // Add previous slacks
             if(_s_length > 0) {
-                lhs = (Matrix(lhs) | Matrix(util::zeros(lhs.size(), _s_length))).get();
+                la::append(lhs, la::zeros(lhs.size(), _s_length));
             }
             _s_length += lhs.size(); // Number of slack variables for this set of constraints
 
             // Ax <= b <=> [A | I] [x^t | s^t]^t = b - add slack at the right position
-            lhs = (Matrix(lhs) | Matrix(util::eye(lhs.size()))).get();
+            la::append(lhs, la::eye(lhs.size()));
 
-            util::append(_lhs, std::move(lhs));
-            util::append(_rhs, std::move(rhs));
+            la::append(_lhs, std::move(lhs));
+            la::append(_rhs, std::move(rhs));
             return;
         };
         case geq: {
             // Ax >= b <=> -Ax <= -b - and proceed as in leq
-            lhs = (Matrix(lhs) * (-1)).get();
-            rhs = util::scale(rhs, -1);
+            la::scale(lhs,-1.0); // Negate the lhs
+            la::scale(rhs,-1.0);
 
             // Add previous slacks
             if(_s_length > 0) {
-                lhs = (Matrix(lhs) | Matrix(util::zeros(lhs.size(), _s_length))).get();
+                la::append(lhs, la::zeros(lhs.size(), _s_length));
             }
             _s_length += lhs.size(); // Number of slack variables for this set of constraints
 
             // Ax <= b <=> [A | I] [x^t | s^t]^t = b - add slack at the right position
-            lhs = (Matrix(lhs) | Matrix(util::eye(lhs.size()))).get();
+            la::append(lhs, la::eye(lhs.size()));
 
-            util::append(_lhs, std::move(lhs));
-            util::append(_rhs, std::move(rhs));
+            la::append(_lhs, std::move(lhs));
+            la::append(_rhs, std::move(rhs));
             return;
         };
         default: throw std::invalid_argument("Undefined constraint type!");
     }
 }
 
-void Simplex::Variable::addObjective(const util::vec& obj, ObjType type) {
+void Simplex::Variable::addObjective(const la::vec& obj, ObjType type) {
     // Default is min c^t * x
     if(type == min) {
         _obj = obj;
     }
     else {
-        _obj = util::scale(obj, -1);
+        _obj = la::scale(obj, -1);
     }
 
     // x = x+ - x- -> c^t * x = [c^t -c^t] * [x+ x-]
     if(_type == unb) {
-        util::append(_obj, util::scale(_obj, -1));
+        la::append(_obj, la::scale(_obj, -1));
     }
 }
 
-std::tuple<util::matrix, util::vec, util::vec> Simplex::Variable::getABC() {
+std::tuple<la::matrix, la::vec, la::vec> Simplex::Variable::getABC() {
     // Add 0's where slack is present, to bring A to a rectangular form
     // Length corresponds to the variable vector [x+ x- s]
     int x_length{};
@@ -97,9 +96,9 @@ std::tuple<util::matrix, util::vec, util::vec> Simplex::Variable::getABC() {
         x_length = _num;
     }
     int row_length = x_length + _s_length;
-    for(util::vec& row : _lhs) {
+    for(la::vec& row : _lhs) {
         if(row.size() < row_length) {
-            util::append(row, util::vec(row_length - row.size(), 0.0));
+            la::append(row, la::vec(row_length - row.size(), 0.0));
         }
     }
 
@@ -113,14 +112,14 @@ std::tuple<util::matrix, util::vec, util::vec> Simplex::Variable::getABC() {
     for(int i=0; i<_rhs.size(); i++) {
         if(_rhs[i] < 0) {
             _rhs[i] = -_rhs[i];
-            _lhs[i] = util::scale(_lhs[i], -1);
+            _lhs[i] = la::scale(_lhs[i], -1);
         }
     }
 
     return {_lhs,_rhs,_obj};
 }
 
-util::vec Simplex::Variable::getValue(util::vec sol) {
+la::vec Simplex::Variable::getValue(la::vec sol) {
     // Solution has length of row_length, is of form [x+ x- s]
     int x_length{};
     if(_type == unb) {
@@ -135,7 +134,7 @@ util::vec Simplex::Variable::getValue(util::vec sol) {
         throw std::invalid_argument("Solution doesn't correspond to the internal variable parameters");
     }
 
-    util::vec result{};
+    la::vec result{};
     result.reserve(_num);
     if(_type == unb) {
         // x = x+ - x-
@@ -162,7 +161,7 @@ void Simplex::addVariables(const std::string& alias, int num, VarType type){
     _vars.insert({alias, std::make_shared<Simplex::Variable>(num, type)});
 }
 
-void Simplex::addConstraints(const std::string& alias, const util::matrix& lhs, const util::vec& rhs, ConstrType type) {
+void Simplex::addConstraints(const std::string& alias, const la::matrix& lhs, const la::vec& rhs, ConstrType type) {
     std::shared_ptr<Simplex::Variable> var_ptr = findVar(alias);
     if(!var_ptr) {
         throw std::invalid_argument("Alias not assigned to any variable!");
@@ -170,7 +169,7 @@ void Simplex::addConstraints(const std::string& alias, const util::matrix& lhs, 
     var_ptr->addConstraint(lhs,rhs,type);
 }
 
-void Simplex::addObjective(const std::string& alias, const util::vec& obj, ObjType type) {
+void Simplex::addObjective(const std::string& alias, const la::vec& obj, ObjType type) {
     std::shared_ptr<Simplex::Variable> var_ptr = findVar(alias);
     if(!var_ptr) {
         throw std::invalid_argument("Alias not assigned to any variable!");
@@ -179,7 +178,7 @@ void Simplex::addObjective(const std::string& alias, const util::vec& obj, ObjTy
 }
 
 // --- General Solve ---
-std::pair<util::vec, Simplex::Status> Simplex::solve() {
+std::pair<la::vec, Simplex::Status> Simplex::solve() {
     // Formulate the problem
     setup();
 
@@ -190,31 +189,31 @@ std::pair<util::vec, Simplex::Status> Simplex::solve() {
     int m = _c.size();
 
     // Solve the initial feasibility problem >> min s << s.t. [A|I]*[x|s]^t = b, x,s >= 0
-    util::matrix A_init = (Matrix(_A) | util::eye(n)).get();
-    util::vec b_init = _b;
-    util::vec c_init = util::vec(m, 0.0);
-    util::append(c_init, util::vec(n, 1.0)); // Minimize the slack variables
-    util::vec x_init = util::vec(m, 0.0);
-    util::vec b_copy = _b;
-    util::append(x_init, std::move(b_copy)); // b is the initial solution
+    la::matrix A_init = (Matrix(_A) | la::eye(n)).get();
+    la::vec b_init = _b;
+    la::vec c_init = la::vec(m, 0.0);
+    la::append(c_init, la::vec(n, 1.0)); // Minimize the slack variables
+    la::vec x_init = la::vec(m, 0.0);
+    la::vec b_copy = _b;
+    la::append(x_init, std::move(b_copy)); // b is the initial solution
     // --- End Formulate Init
 
     // --- Start Solve Init
-    std::pair<util::vec, Simplex::Status> init = solve(std::move(A_init), std::move(b_init), std::move(c_init), std::move(x_init));
+    std::pair<la::vec, Simplex::Status> init = solve(std::move(A_init), std::move(b_init), std::move(c_init), std::move(x_init));
 
     // Initial point : discard slack from the initial solution
-    util::vec x = util::subvector(init.first, 0, m);
-    util::vec slack = util::subvector(init.first, m, m+n);
+    la::vec x = la::subvector(init.first, 0, m);
+    la::vec slack = la::subvector(init.first, m, m+n);
 
     // Initial solution not optimal or slack not 0 <-> No feasible point
     if(init.second != optimal || !std::all_of(slack.begin(), slack.end(), [](const double& val){
-        return util::isEqual(val, 0.0);
+        return la::isEqual(val, 0.0);
     })) {
         return {distillSolution(x), infeasible};
     }
     // --- End Solve Init
 
-    std::pair<util::vec, Simplex::Status> final = solve(std::move(_A), std::move(_b), std::move(_c), std::move(x));
+    std::pair<la::vec, Simplex::Status> final = solve(std::move(_A), std::move(_b), std::move(_c), std::move(x));
 
     return {distillSolution(final.first), final.second};
 }
@@ -232,7 +231,7 @@ std::shared_ptr<Simplex::Variable> Simplex::findVar(const std::string& alias) {
 }
 
 bool Simplex::validSystem() const {
-    if(!util::isRectangular(_A)) {
+    if(!la::isRectangular(_A)) {
         return false;
     }
     if(_A.size() != _b.size()) {
@@ -249,9 +248,9 @@ bool Simplex::validSystem() const {
     });
 }
 
-void Simplex::checkSystem(const util::matrix& lhs, const util::vec& rhs) {
+void Simplex::checkSystem(const la::matrix& lhs, const la::vec& rhs) {
     // Must be rectangular, size > 0, matching sizes
-    if(!util::isRectangular(lhs)) {
+    if(!la::isRectangular(lhs)) {
         throw std::invalid_argument("Matrix not rectangular!");
     }
     if(lhs.size() == 0){
@@ -267,13 +266,13 @@ void Simplex::setup() {
     int iter=0;
     std::for_each(_vars.begin(), _vars.end(), [this, &iter](const std::pair<std::string, std::shared_ptr<Variable>>& elem) {
         auto [A,b,c] = elem.second->getABC();
-        util::append(_b,std::move(b));
-        util::append(_c,std::move(c));
+        la::append(_b,std::move(b));
+        la::append(_c,std::move(c));
         if(iter > 0){
             // Append the 0's
-            A = (Matrix(util::zeros(A.size(), iter)) | A).get();
+            A = (Matrix(la::zeros(A.size(), iter)) | A).get();
         }
-        util::append(_A,std::move(A));
+        la::append(_A,std::move(A));
 
         // Current variable starts at iter
         _var_starts.push_back({elem.first, iter});
@@ -283,9 +282,9 @@ void Simplex::setup() {
 
     // Make _A rectangular - add 0's from the other side
     // iter == _c.size() now, == #variables == #columns of _A
-    for(util::vec& row : _A) {
+    for(la::vec& row : _A) {
         if(row.size() < iter) {
-            util::append(row, util::vec(iter - row.size(), 0.0));
+            la::append(row, la::vec(iter - row.size(), 0.0));
         }
     }
 
@@ -295,8 +294,8 @@ void Simplex::setup() {
     }
 }
 
-util::vec Simplex::distillSolution(const util::vec& sol_slack) {
-    util::vec sol{};
+la::vec Simplex::distillSolution(const la::vec& sol_slack) {
+    la::vec sol{};
 
     int start=0;
     int end=0;
@@ -312,14 +311,14 @@ util::vec Simplex::distillSolution(const util::vec& sol_slack) {
         }
 
         // Distill the value from the subvector of the solution vecotr, corresponding to the variable associated with the alias
-        util::append(sol, _vars.at(alias)->getValue(util::subvector(sol_slack, start, end)));
+        la::append(sol, _vars.at(alias)->getValue(la::subvector(sol_slack, start, end)));
     }
     
     return sol;
 }
 
-util::vec Simplex::combineSolution(const util::vec& x_B, const std::vector<int>& B_set, const int& n) {
-    util::vec sol(n, 0.0);
+la::vec Simplex::combineSolution(const la::vec& x_B, const std::vector<int>& B_set, const int& n) {
+    la::vec sol(n, 0.0);
 
     for(int i=0; i<B_set.size(); i++) {
         sol[B_set[i]] = x_B[i];
@@ -328,7 +327,7 @@ util::vec Simplex::combineSolution(const util::vec& x_B, const std::vector<int>&
     return sol;
 }
 
-std::pair<util::vec, Simplex::Status> Simplex::solve(util::matrix&& lhs, util::vec&& rhs, util::vec&& obj, util::vec&& init) {
+std::pair<la::vec, Simplex::Status> Simplex::solve(la::matrix&& lhs, la::vec&& rhs, la::vec&& obj, la::vec&& init) {
     int maxiter = 1000;
 
     // -- Problem formulation
@@ -338,13 +337,13 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(util::matrix&& lhs, util::v
     std::cout << "--> Initializing Simplex Solver " << std::endl;
     std::cout << "--> Considering problem min(x) c^t*x s.t. A*x=0, x>=0 with: " << std::endl;
     std::cout << "----- A -----" << std::endl;
-    util::print(lhs);
+    la::print(lhs);
     std::cout << "----- b -----" << std::endl;
-    util::print(rhs);
+    la::print(rhs);
     std::cout << "----- c -----" << std::endl;
-    util::print(obj);
+    la::print(obj);
     std::cout << "----- x -----" << std::endl;
-    util::print(init);
+    la::print(init);
     std::cout << "----------" << std::endl;
     // --- End Printing
     
@@ -355,7 +354,7 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(util::matrix&& lhs, util::v
     std::cout << "n: " << n << ", m: " << m << std::endl;
 
     // Get the initial matrices in the *column representation*
-    util::matrix lhs_col = Matrix(lhs).T().get(); // now each row corresponds to the column
+    la::matrix lhs_col = Matrix(lhs).T().get(); // now each row corresponds to the column
 
     // --- Initialize variables
 
@@ -365,22 +364,22 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(util::matrix&& lhs, util::v
     N_set.reserve(n-m);
     B_set.reserve(m); // The matrix corresponding to the basic set should be invertible - unique identifier of the corresponding starting edge
 
-    util::matrix a_B{};
+    la::matrix a_B{};
     a_B.reserve(m);
-    util::matrix a_N{};
+    la::matrix a_N{};
     a_N.reserve(n-m);
-    util::vec c_N{};
+    la::vec c_N{};
     c_N.reserve(n-m);
-    util::vec c_B{};
+    la::vec c_B{};
     c_B.reserve(m);
 
-    // util::vec x_N(n, 0.0); // - always the case
-    util::vec x_B{};
+    // la::vec x_N(n, 0.0); // - always the case
+    la::vec x_B{};
     x_B.reserve(m);
-    util::vec s_N(n-m, 0.0);
+    la::vec s_N(n-m, 0.0);
 
     for(int i=0; i<n; i++){
-        if(util::isEqual(init.at(i), 0.0)) {
+        if(la::isEqual(init.at(i), 0.0)) {
             N_set.push_back(i);
             a_N.push_back(lhs_col.at(i));
             c_N.push_back(obj.at(i));
@@ -399,10 +398,10 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(util::matrix&& lhs, util::v
     }
 
     std::cout << "----- N_set -----" << std::endl;
-    util::print(N_set);
+    la::print(N_set);
 
     std::cout << "----- B_set -----" << std::endl;
-    util::print(B_set);
+    la::print(B_set);
 
     // --- Initialize Matrices
 
@@ -423,10 +422,10 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(util::matrix&& lhs, util::v
     // A_N_t <-> A_B_t (originally columns, here rows in row representations)
     // s_N and x_B NOT since the counterparts are just 0
 
-    util::vec d{};
+    la::vec d{};
     double x_pivot{0.0};
 
-    util::vec lambda{};
+    la::vec lambda{};
     // ----- End Initial setting
 
     // ----- Start Iterative Steps
@@ -441,9 +440,9 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(util::matrix&& lhs, util::v
         std::cout << "----- A_inv -----" << std::endl;
         A_inv.print();
         std::cout << "----- x_B -----" << std::endl;
-        util::print(x_B);
+        la::print(x_B);
         std::cout << "----- s_N -----" << std::endl;
-        util::print(s_N);
+        la::print(s_N);
         std::cout << "----------" << std::endl;
         // --- End Printing
 
@@ -451,12 +450,12 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(util::matrix&& lhs, util::v
         // 1) l = A_B^(-t)*c_B
         lambda = A_B_t.solve(c_B);
         std::cout << "-- lambda --" << std::endl;
-        util::print(lambda);
+        la::print(lambda);
 
         // 2) s_N = c_N - A_N^t*l
-        s_N = util::sub(c_N, A_N_t * lambda);
+        s_N = la::sub(c_N, A_N_t * lambda);
         std::cout << "-- s_N --" << std::endl;
-        util::print(s_N);
+        la::print(s_N);
         // --- End Iteration calculations
 
         // --- Start Optimality Condition
@@ -488,7 +487,7 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(util::matrix&& lhs, util::v
         // d = A_B_t.T().solve(A_N_t.getRow(i_N));
 
         std::cout << "-- d --" << std::endl;
-        util::print(d);
+        la::print(d);
 
         // 5) Select p = argmin i {x_i / d_i} - where d_i > 0 and i from B (to be swapped away)
         i_B = 0;
@@ -521,7 +520,7 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(util::matrix&& lhs, util::v
         // 6) Update new x_B = old x_B + Dx_B, swap index p with q in N and B
 
         // Update x_B
-        x_B = util::sub(x_B, util::scale(d, x_pivot));
+        x_B = la::sub(x_B, la::scale(d, x_pivot));
         x_B.at(i_B) = x_pivot;
         
         std::cout << "-> Indices to be swapped" << std::endl;
@@ -532,9 +531,9 @@ std::pair<util::vec, Simplex::Status> Simplex::solve(util::matrix&& lhs, util::v
         // Sherman-Morrison update for A_inv
         // u = A_N.i_N - A_B.i_B
         // v = [0 ... 1 ... 0], at i_B-th entry
-        util::vec v(m, 0.0);
+        la::vec v(m, 0.0);
         v.at(i_B) = 1.0;
-        A_inv = std::move(A_inv.ShermanMorrison(util::sub(A_N_t.getRow(i_N), A_B_t.getRow(i_B)), v));
+        A_inv = std::move(A_inv.ShermanMorrison(la::sub(A_N_t.getRow(i_N), A_B_t.getRow(i_B)), v));
 
         // Sets/structures affected:
         // N <-> B

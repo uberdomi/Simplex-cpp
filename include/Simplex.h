@@ -6,7 +6,7 @@
 #include <memory>
 #include <unordered_map>
 #include <string>
-#include "Utils.h"
+#include "LinAlg.h"
 
 enum ConstrType {
     equal, leq, geq
@@ -26,8 +26,8 @@ class Simplex {
 
     private:
     // Defined for the final problem formulation
-    util::vec _b{}, _c{};
-    util::matrix _A{};
+    la::vec _b{}, _c{};
+    la::matrix _A{};
 
     class Variable {
         // [perf] Optimize passing by value/reference - avoid copying data when unnecessary. Generally the outer scope shuld retain its own Ab pairs and Simplex/Variable should use only one copy in total
@@ -37,25 +37,25 @@ class Simplex {
         private:
         const int _num; // Once associated with an alias, cannot change its size
         const VarType _type;
-        util::matrix _lhs;
-        util::vec _rhs, _obj;
+        la::matrix _lhs;
+        la::vec _rhs, _obj;
         int _s_length=0; // Each time an inequality constraint is added, needs to add as many slack variables; the final matrix then needs to be rectangular, with column length _num + _s_length (i.e. add 0's where necessary)
 
         public:
         Variable(int num, VarType var_type);
 
         // [pref] Many constraints -> potentially a lot of sparse matrices, inefficient
-        void addConstraint(util::matrix lhs, util::vec rhs, ConstrType constr_type = equal);
+        void addConstraint(la::matrix lhs, la::vec rhs, ConstrType type = equal);
 
-        void addObjective(const util::vec& obj, ObjType type = min);
+        void addObjective(const la::vec& obj, ObjType type = min);
 
         // [perf] move the own lhs/rhs values and invalidate them -> no longer needed
         // Turn own constraints into the standard form Ax=b
         // Make certain b >= 0
-        std::tuple<util::matrix, util::vec, util::vec> getABC();
+        std::tuple<la::matrix, la::vec, la::vec> getABC();
 
         // Given the solution vector with x+, x- and slack, return the final variable value
-        util::vec getValue(util::vec sol);
+        la::vec getValue(la::vec sol);
     };
 
     // Map for adding variables and in the end aggregating their values
@@ -76,11 +76,11 @@ class Simplex {
 
     void addVariables(const std::string& alias, int num=1, VarType type = pos);
 
-    void addConstraints(const std::string& alias, const util::matrix& lhs, const util::vec& rhs, ConstrType type = equal);
+    void addConstraints(const std::string& alias, const la::matrix& lhs, const la::vec& rhs, ConstrType type = equal);
 
-    void addObjective(const std::string& alias, const util::vec& obj, ObjType type = min);
+    void addObjective(const std::string& alias, const la::vec& obj, ObjType type = min);
 
-    std::pair<util::vec, Simplex::Status> solve();
+    std::pair<la::vec, Simplex::Status> solve();
 
     private:
     // --- Helper functions
@@ -90,19 +90,19 @@ class Simplex {
     bool validSystem() const;
 
     /// @brief Throw an exception if the system of constraints lhs * x = rhs is invalid
-    static void checkSystem(const util::matrix& lhs, const util::vec& rhs);
+    static void checkSystem(const la::matrix& lhs, const la::vec& rhs);
 
     /// @brief Collect the problem formulations from all stored variables and append them to the final system in the standard form min c^t*x, s.t. Ax=b, x>=0
     void setup();
 
     /// @brief Solves the system in the standard form min c^t*x, s.t. Ax=b, x>=0, *provided* the valid initial point
-    std::pair<util::vec, Simplex::Status> solve(util::matrix&& lhs, util::vec&& rhs, util::vec&& obj, util::vec&& init);
+    std::pair<la::vec, Simplex::Status> solve(la::matrix&& lhs, la::vec&& rhs, la::vec&& obj, la::vec&& init);
 
     /// @brief Provided the solution with all reformulations of the variables and slack variables, return the original vector value
-    util::vec distillSolution(const util::vec& sol_slack);
+    la::vec distillSolution(const la::vec& sol_slack);
 
     /// @brief The solution with all reformulations (undistilled) is the basic vector filled with 0's at the entries from the normal set
-    util::vec combineSolution(const util::vec& x_B, const std::vector<int>& B_set, const int& n);
+    la::vec combineSolution(const la::vec& x_B, const std::vector<int>& B_set, const int& n);
 
 };
 
