@@ -434,34 +434,62 @@ std::pair<la::vec, Simplex::Status> Simplex::solve(la::matrix&& lhs, la::vec&& r
     la::vec lambda{};
     // ----- End Initial setting
 
+    // Progress tracking
+    std::vector<double> objective_history;
+    const bool show_detailed_output = (n <= 10 && m <= 5); // Only show detailed matrices for small problems
+    
+    // Calculate initial objective value
+    double current_objective = 0.0;
+    for(int i = 0; i < B_set.size(); i++) {
+        current_objective += c_B[i] * x_B[i];
+    }
+    objective_history.push_back(current_objective);
+    
+    std::cout << "--> Starting optimization (initial objective: " << current_objective << ")" << std::endl;
+    std::cout << "Progress: ";
+
     // ----- Start Iterative Steps
     for(int iter=0; iter<maxiter; iter++) {
 
-        // --- Start Printing
-        std::cout << "-> Iteration " << (iter+1) << " out of " << maxiter << std::endl;
-        std::cout << "----- A_B_t -----" << std::endl;
-        la::print(A_B_t);
-        std::cout << "----- A_N_t -----" << std::endl;
-        la::print(A_N_t);
-        std::cout << "----- A_inv -----" << std::endl;
-        la::print(A_inv);
-        std::cout << "----- x_B -----" << std::endl;
-        la::print(x_B);
-        std::cout << "----- s_N -----" << std::endl;
-        la::print(s_N);
-        std::cout << "----------" << std::endl;
+        // Progress indicator
+        if(iter % 10 == 0 || iter < 5) {
+            std::cout << "." << std::flush;
+        }
+
+        // --- Start Printing (only for small problems or first few iterations)
+        if(show_detailed_output || iter < 2) {
+            std::cout << "\n-> Iteration " << (iter+1) << " out of " << maxiter 
+                      << " (objective: " << current_objective << ")" << std::endl;
+            if(show_detailed_output) {
+                std::cout << "----- A_B_t -----" << std::endl;
+                la::print(A_B_t);
+                std::cout << "----- A_N_t -----" << std::endl;
+                la::print(A_N_t);
+                std::cout << "----- A_inv -----" << std::endl;
+                la::print(A_inv);
+                std::cout << "----- x_B -----" << std::endl;
+                la::print(x_B);
+                std::cout << "----- s_N -----" << std::endl;
+                la::print(s_N);
+                std::cout << "----------" << std::endl;
+            }
+        }
         // --- End Printing
 
         // --- Start Iteration calculations
         // 1) l = A_B^(-t)*c_B
         lambda = la::solve(A_B_t, c_B);
-        std::cout << "-- lambda --" << std::endl;
-        la::print(lambda);
+        if(show_detailed_output) {
+            std::cout << "-- lambda --" << std::endl;
+            la::print(lambda);
+        }
 
         // 2) s_N = c_N - A_N^t*l
         s_N = la::sub(c_N, la::mult(A_N_t, lambda));
-        std::cout << "-- s_N --" << std::endl;
-        la::print(s_N);
+        if(show_detailed_output) {
+            std::cout << "-- s_N --" << std::endl;
+            la::print(s_N);
+        }
         // --- End Iteration calculations
 
         // --- Start Optimality Condition
@@ -475,13 +503,30 @@ std::pair<la::vec, Simplex::Status> Simplex::solve(la::matrix&& lhs, la::vec&& r
         }
         if(i_N == -1) {
             // s_N non-negative -> optimal solution found
-            std::cout << "--> Exiting: problem optimal!" << std::endl;
+            std::cout << "\n--> Optimal solution found!" << std::endl;
+            std::cout << "    Final objective value: " << current_objective << std::endl;
+            std::cout << "    Iterations completed: " << iter << std::endl;
+            
+            // Print objective evolution summary
+            if(objective_history.size() > 1) {
+                std::cout << "    Objective improvement: " << (objective_history[0] - current_objective) << std::endl;
+                std::cout << "    Convergence history: ";
+                for(size_t i = 0; i < std::min(objective_history.size(), size_t(5)); i++) {
+                    std::cout << objective_history[i];
+                    if(i < std::min(objective_history.size(), size_t(5)) - 1) std::cout << " -> ";
+                }
+                if(objective_history.size() > 5) std::cout << " -> ... -> " << current_objective;
+                std::cout << std::endl;
+            }
+            
             return {combineSolution(x_B,B_set,n), optimal};
         }
 
         // s_N.at(i_N) negative!
-        std::cout << "-> Not optimal yet" << std::endl;
-        std::cout << "i_N: " << i_N << std::endl;
+        if(show_detailed_output || iter < 2) {
+            std::cout << "-> Not optimal yet (entering variable: " << N_set[i_N] << ")" << std::endl;
+            std::cout << "i_N: " << i_N << std::endl;
+        }
         // --- End Optimality Condition
 
         // --- Start Pivot
@@ -492,8 +537,10 @@ std::pair<la::vec, Simplex::Status> Simplex::solve(la::matrix&& lhs, la::vec&& r
         d = la::mult(A_inv, la::getRow(A_N_t, i_N)); // A_inv * A_N_t.getRow(i_N) -> d = A_B^(-1) * A_N_t.getRow(i_N)
         // d = A_B_t.T().solve(A_N_t.getRow(i_N));
 
-        std::cout << "-- d --" << std::endl;
-        la::print(d);
+        if(show_detailed_output) {
+            std::cout << "-- d --" << std::endl;
+            la::print(d);
+        }
 
         // 5) Select p = argmin i {x_i / d_i} - where d_i > 0 and i from B (to be swapped away)
         i_B = 0;
@@ -512,13 +559,17 @@ std::pair<la::vec, Simplex::Status> Simplex::solve(la::matrix&& lhs, la::vec&& r
         }
         if(x_pivot < 0) {
             // <=> d <= 0 -> unbounded
-            std::cout << "--> Exiting: problem unbounded!" << std::endl;
+            std::cout << "\n--> Problem is unbounded!" << std::endl;
+            std::cout << "    Direction vector d has no positive components" << std::endl;
+            std::cout << "    Iterations completed: " << iter << std::endl;
             return {combineSolution(x_B,B_set,n), unbounded};
         }
 
-        std::cout << "-> Checked the d condition with" << std::endl;
-        std::cout << "x_pivot: " << x_pivot << std::endl;
-        std::cout << "i_B: " << i_B << std::endl;
+        if(show_detailed_output || iter < 2) {
+            std::cout << "-> Checked the d condition with" << std::endl;
+            std::cout << "x_pivot: " << x_pivot << std::endl;
+            std::cout << "i_B: " << i_B << " (leaving variable: " << B_set[i_B] << ")" << std::endl;
+        }
 
         // --- End Pivot
 
@@ -529,9 +580,19 @@ std::pair<la::vec, Simplex::Status> Simplex::solve(la::matrix&& lhs, la::vec&& r
         x_B = la::sub(x_B, la::scale(d, x_pivot));
         x_B.at(i_B) = x_pivot;
         
-        std::cout << "-> Indices to be swapped" << std::endl;
-        std::cout << N_set.at(i_N) << ": N -> B " << std::endl;
-        std::cout << B_set.at(i_B) << ": B -> N " << std::endl;
+        // Calculate new objective value
+        current_objective = 0.0;
+        for(int i = 0; i < B_set.size(); i++) {
+            current_objective += c_B[i] * x_B[i];
+        }
+        objective_history.push_back(current_objective);
+        
+        if(show_detailed_output || iter < 2) {
+            std::cout << "-> Indices to be swapped" << std::endl;
+            std::cout << N_set.at(i_N) << ": N -> B " << std::endl;
+            std::cout << B_set.at(i_B) << ": B -> N " << std::endl;
+            std::cout << "-> New objective value: " << current_objective << std::endl;
+        }
 
         // TODO Sherman Morrison infesible -> try different index from N (matrix not invertible)
         // Sherman-Morrison update for A_inv
@@ -554,6 +615,21 @@ std::pair<la::vec, Simplex::Status> Simplex::solve(la::matrix&& lhs, la::vec&& r
 
     }
     // ----- End Iterative Steps
+
+    std::cout << "\n--> Maximum iterations reached!" << std::endl;
+    std::cout << "    Current objective value: " << current_objective << std::endl;
+    std::cout << "    Iterations completed: " << maxiter << std::endl;
+    
+    // Print objective evolution summary
+    if(objective_history.size() > 1) {
+        std::cout << "    Objective change: " << (objective_history[0] - current_objective) << std::endl;
+        std::cout << "    Final convergence: ";
+        for(size_t i = std::max(int(objective_history.size()) - 5, 0); i < objective_history.size(); i++) {
+            std::cout << objective_history[i];
+            if(i < objective_history.size() - 1) std::cout << " -> ";
+        }
+        std::cout << std::endl;
+    }
 
     throw std::runtime_error("Max. iter count reached and no solution!");
 }
