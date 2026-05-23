@@ -71,4 +71,4 @@ Testing/
 # ------------------
 
 # VS Code settings
-.vscode/settings.json
+.vscode/*

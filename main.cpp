@@ -1,11 +1,13 @@
-#include "Utils.h"
-#include "Matrix.h"
+#include "LinAlg.h"
 #include "Simplex.h"
 
 #include <iostream>
 
+using namespace la;
+
 int main(int argc, char **argv)
 {
+    // TODO : refactor for the current implementations
     // util::matrix A{{1,2,3}, {2,1,3}, {7,4,2}};
     // util::print(A);
 
