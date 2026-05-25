@@ -1,3 +1,16 @@
+# --- Ignore binaries ---
+
+# Ignore all files
+*
+
+# Do NOT ignore files with a dot (with an extension) - ignore binaries
+!*.*
+
+# Do NOT ignore directories
+!*/
+
+# ------------------
+
 # Prerequisites
 *.d
 
