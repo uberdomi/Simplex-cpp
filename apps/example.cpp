@@ -1,10 +1,29 @@
-// #include "matrix.hpp"
+#include "linalg/core/matrix.hpp"
 
 #include <iostream>
 
 int main(int argc, char **argv) {
 
-  std::cout << "Hello world!" << std::endl;
+  std::cout << "Hello world! This is an example executable." << std::endl;
+
+  std::size_t n_rows = 3;
+  std::size_t n_cols = 4;
+
+  la::Matrix2D<double> matrix1 = la::zeros(n_rows, n_cols);
+
+  la::Matrix2D<double> matrix2 = la::zeros(n_rows);
+
+  la::Matrix2D<double> matrix3 = la::ones(n_rows, n_cols);
+
+  la::Matrix2D<double> matrix4 = la::ones(n_rows);
+
+  la::Matrix2D<double> matrix5 = la::eye(n_rows);
+
+  matrix1.print();
+  matrix2.print();
+  matrix3.print();
+  matrix4.print();
+  matrix5.print();
 
   return 0;
   //   // --- Deprecated examples ---
