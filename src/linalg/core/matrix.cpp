@@ -1,61 +1,91 @@
 #include "matrix.hpp"
 
 #include <iostream>
+#include <memory>
 #include <stdexcept>
+#include <string>
 
 // --- Constructors ---
 
 namespace la {
 
+// Default constructor
 template <typename NumType>
 Matrix2D<NumType>::Matrix2D(std::size_t n_rows, std::size_t n_cols)
-    : n_rows(n_rows), n_cols(n_cols), stride_rows(n_cols), stride_cols(1),
-      data(n_rows * n_cols, NumType()) {}
+    : n_rows_(n_rows), n_cols_(n_cols), stride_rows_(n_cols), stride_cols_(1),
+      size_(n_rows * n_cols),
+      data_(std::shared_ptr<NumType[]>(new NumType[n_rows * n_cols]{})) {}
 
+// Matrix from a 2D vector
 template <typename NumType>
 Matrix2D<NumType>::Matrix2D(std::vector<std::vector<NumType>> inputs) {
+  // Size checks
   if (inputs.empty()) {
     throw std::runtime_error("Empty input matrix data!");
   }
-  n_rows = inputs.size();
 
   if (inputs[0].empty()) {
     throw std::runtime_error("Empty input matrix row!");
   }
 
-  n_cols = inputs[0].size();
+  n_rows_ = inputs.size();
 
-  stride_rows = n_cols;
-  stride_cols = 1;
+  n_cols_ = inputs[0].size();
 
-  data = std::vector(n_rows * n_cols, NumType());
+  stride_rows_ = n_cols_;
+  stride_cols_ = 1;
+  size_ = n_rows_ * n_cols_;
 
-  std::size_t offset = 0;
-
-  for (const auto &row : inputs) {
-    if (row.size() != n_cols) {
+  // Check loop
+  for (const auto &row_vec : inputs) {
+    if (row_vec.size() != n_cols_) {
       throw std::runtime_error("Row size mismatch : current " +
-                               std::to_string(row.size()) + " vs wanted " +
-                               std::to_string(n_cols));
+                               std::to_string(row_vec.size()) + " vs wanted " +
+                               std::to_string(n_cols_));
     }
-
-    std::copy(row.begin(), row.end(), data.begin() + offset);
-
-    offset += n_cols;
   }
+
+  // Populate the underlying data
+  std::shared_ptr<NumType[]> mutable_buffer(new NumType[size_]);
+
+  for (size_t i; i < n_rows_; i++) {
+    for (size_t j; j < n_cols_; j++) {
+      mutable_buffer[i * stride_rows_ + j * stride_cols_] = inputs[i][j];
+    }
+  }
+
+  data_ = std::move(mutable_buffer);
 }
+
+// Private constructor from a data array
+template <typename NumType>
+Matrix2D<NumType>::Matrix2D(std::shared_ptr<const NumType[]> shared_data,
+                            std::size_t n_rows, std::size_t n_cols)
+    : n_rows_(n_rows), n_cols_(n_cols), stride_rows_(n_cols), stride_cols_(1),
+      size_(n_rows * n_cols), data_(std::move(shared_data)) {}
 
 // --- Stride operations ---
 
 template <typename NumType>
-inline NumType Matrix2D<NumType>::at(std::size_t row, std::size_t col) {
-  //   Automatic bounds checking by the in-build function
-  return data.at(row * stride_rows + col * stride_cols);
+inline NumType Matrix2D<NumType>::operator()(std::size_t row, std::size_t col) {
+  return data_[row * stride_rows_ + col * stride_cols_];
 }
 
-template <typename NumType> Matrix2D<NumType> &Matrix2D<NumType>::t() {
+template <typename NumType>
+inline NumType Matrix2D<NumType>::at(std::size_t row, std::size_t col) {
+  //   With bounds checking
+  size_t index = row * stride_rows_ + col * stride_cols_;
+  if (index >= size_ || index < 0) {
+    throw std::out_of_range("Invalid access index: " + std::to_string(index) +
+                            " not in (0, " + std::to_string(size_) + ")");
+  }
+  return data_[index];
+}
+
+template <typename NumType> Matrix2D<NumType> &Matrix2D<NumType>::transpose() {
+  // TODO create a new matrix with shared underlying data
   //   Automatic bounds checking by the in-build function
-  std::swap(stride_rows, stride_cols);
+  std::swap(stride_rows_, stride_cols_);
 
   return *this;
 }
@@ -63,34 +93,35 @@ template <typename NumType> Matrix2D<NumType> &Matrix2D<NumType>::t() {
 // --- Getters ---
 
 template <typename NumType> std::size_t Matrix2D<NumType>::get_size() {
-  return n_rows * n_cols;
+  return n_rows_ * n_cols_;
 }
 
 template <typename NumType> std::size_t Matrix2D<NumType>::get_n_rows() {
-  return n_rows;
+  return n_rows_;
 }
 
 template <typename NumType> std::size_t Matrix2D<NumType>::get_n_cols() {
-  return n_cols;
+  return n_cols_;
 }
 
 template <typename NumType>
 std::tuple<std::size_t, std::size_t> Matrix2D<NumType>::get_shape() {
-  return {n_rows, n_cols};
+  return {n_rows_, n_cols_};
 }
 
 template <typename NumType>
 std::tuple<std::size_t, std::size_t> Matrix2D<NumType>::get_strides() {
-  return {stride_rows, stride_cols};
+  return {stride_rows_, stride_cols_};
 }
 
 // --- Further functionalities ---
 
 template <typename NumType> void Matrix2D<NumType>::print() {
-  std::cout << "--- matrix2d (" << n_rows << "," << n_cols << ")" << std::endl;
-  for (std::size_t row = 0; row < n_rows; row++) {
+  std::cout << "--- matrix2d (" << n_rows_ << "," << n_cols_ << ")"
+            << std::endl;
+  for (std::size_t row = 0; row < n_rows_; row++) {
     std::cout << "[ ";
-    for (std::size_t col = 0; col < n_cols; col++) {
+    for (std::size_t col = 0; col < n_cols_; col++) {
       std::cout << this->at(row, col) << ", ";
     }
     std::cout << "]" << std::endl;

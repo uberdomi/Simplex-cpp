@@ -2,6 +2,7 @@
 #define _LINALG
 
 #include <cstddef> // for std::size_t
+#include <memory>  // for pointers
 #include <tuple>   // for std::tuple
 #include <vector>
 
@@ -9,25 +10,37 @@ namespace la {
 
 template <typename NumType> class Matrix2D {
 private:
-  std::size_t n_rows;
-  std::size_t n_cols;
+  // Everything immutable, but new objects can be created out of it
+  std::size_t n_rows_;
+  std::size_t n_cols_;
 
-  std::size_t stride_rows;
-  std::size_t stride_cols;
+  std::size_t stride_rows_;
+  std::size_t stride_cols_;
 
-  std::vector<NumType>
-      data; // All data stored contiguously, accesses defined by the strides
+  std::size_t size_;
+
+  std::shared_ptr<const NumType[]>
+      data_; // All data stored contiguously, accesses defined by the strides
 
 public:
-  // --- Common constructors ---
+  // --- Public constructors ---
   Matrix2D(std::size_t n_rows, std::size_t n_cols);
 
   Matrix2D(std::vector<std::vector<NumType>> inputs);
 
+private:
+  // Constructing a matrix from the same underlying data *without copying*
+  Matrix2D(std::shared_ptr<const NumType[]> shared_data, std::size_t n_rows,
+           std::size_t n_cols);
+
+public:
   // --- Stride operations ---
+
+  inline NumType operator()(std::size_t row, std::size_t col);
+
   inline NumType at(std::size_t row, std::size_t col);
 
-  Matrix2D &t();
+  Matrix2D &transpose();
 
   // --- Getters ---
   std::size_t get_size();
