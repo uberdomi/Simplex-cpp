@@ -3,7 +3,7 @@
 
 #include <cstddef> // for std::size_t
 #include <memory>  // for pointers
-#include <tuple>   // for std::tuple
+#include <utility> // for std::pair
 #include <vector>
 
 namespace la {
@@ -36,19 +36,21 @@ private:
 public:
   // --- Stride operations ---
 
+  // Raw access - no bounds checking
   inline NumType operator()(std::size_t row, std::size_t col);
 
+  // Civilized access with bound checking
   inline NumType at(std::size_t row, std::size_t col);
 
-  Matrix2D &transpose();
+  Matrix2D transpose();
 
   // --- Getters ---
   std::size_t get_size();
   std::size_t get_n_rows();
   std::size_t get_n_cols();
 
-  std::tuple<std::size_t, std::size_t> get_shape();
-  std::tuple<std::size_t, std::size_t> get_strides();
+  std::pair<std::size_t, std::size_t> get_shape();
+  std::pair<std::size_t, std::size_t> get_strides();
 
   // --- Further functionalities ---
   void print();

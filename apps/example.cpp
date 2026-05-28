@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+// ./build/bin/example_app
+
 int main(int argc, char **argv) {
 
   std::cout << "Hello world! This is an example executable." << std::endl;
@@ -24,6 +26,10 @@ int main(int argc, char **argv) {
   matrix3.print();
   matrix4.print();
   matrix5.print();
+
+  // Print the transposed matrices
+  matrix1.transpose().print();
+  matrix3.transpose().print();
 
   return 0;
   //   // --- Deprecated examples ---

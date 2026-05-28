@@ -46,15 +46,15 @@ Matrix2D<NumType>::Matrix2D(std::vector<std::vector<NumType>> inputs) {
   }
 
   // Populate the underlying data
-  std::shared_ptr<NumType[]> mutable_buffer(new NumType[size_]);
+  std::shared_ptr<NumType[]> buffer(new NumType[size_]);
 
   for (size_t i; i < n_rows_; i++) {
     for (size_t j; j < n_cols_; j++) {
-      mutable_buffer[i * stride_rows_ + j * stride_cols_] = inputs[i][j];
+      buffer[i * stride_rows_ + j * stride_cols_] = inputs[i][j];
     }
   }
 
-  data_ = std::move(mutable_buffer);
+  data_ = std::move(buffer);
 }
 
 // Private constructor from a data array
@@ -82,18 +82,15 @@ inline NumType Matrix2D<NumType>::at(std::size_t row, std::size_t col) {
   return data_[index];
 }
 
-template <typename NumType> Matrix2D<NumType> &Matrix2D<NumType>::transpose() {
-  // TODO create a new matrix with shared underlying data
-  //   Automatic bounds checking by the in-build function
-  std::swap(stride_rows_, stride_cols_);
-
-  return *this;
+template <typename NumType> Matrix2D<NumType> Matrix2D<NumType>::transpose() {
+  // Swap the rows and cols dimensions, share the underlying data
+  return Matrix2D<NumType>(data_, n_cols_, n_rows_);
 }
 
 // --- Getters ---
 
 template <typename NumType> std::size_t Matrix2D<NumType>::get_size() {
-  return n_rows_ * n_cols_;
+  return size_;
 }
 
 template <typename NumType> std::size_t Matrix2D<NumType>::get_n_rows() {
@@ -105,12 +102,12 @@ template <typename NumType> std::size_t Matrix2D<NumType>::get_n_cols() {
 }
 
 template <typename NumType>
-std::tuple<std::size_t, std::size_t> Matrix2D<NumType>::get_shape() {
+std::pair<std::size_t, std::size_t> Matrix2D<NumType>::get_shape() {
   return {n_rows_, n_cols_};
 }
 
 template <typename NumType>
-std::tuple<std::size_t, std::size_t> Matrix2D<NumType>::get_strides() {
+std::pair<std::size_t, std::size_t> Matrix2D<NumType>::get_strides() {
   return {stride_rows_, stride_cols_};
 }
 
@@ -124,7 +121,7 @@ template <typename NumType> void Matrix2D<NumType>::print() {
     for (std::size_t col = 0; col < n_cols_; col++) {
       std::cout << this->at(row, col) << ", ";
     }
-    std::cout << "]" << std::endl;
+    std::cout << "]\n";
   }
   std::cout << "-------------" << std::endl;
 }
