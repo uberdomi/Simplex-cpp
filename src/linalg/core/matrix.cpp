@@ -14,7 +14,7 @@ template <typename NumType>
 Matrix2D<NumType>::Matrix2D(std::size_t n_rows, std::size_t n_cols)
     : n_rows_(n_rows), n_cols_(n_cols), stride_rows_(n_cols), stride_cols_(1),
       size_(n_rows * n_cols),
-      data_(std::shared_ptr<NumType[]>(new NumType[n_rows * n_cols]{})) {}
+      data_(std::make_shared<NumType[]>(n_rows * n_cols)) {}
 
 // Matrix from a 2D vector
 template <typename NumType>
@@ -46,7 +46,7 @@ Matrix2D<NumType>::Matrix2D(std::vector<std::vector<NumType>> inputs) {
   }
 
   // Populate the underlying data
-  std::shared_ptr<NumType[]> buffer(new NumType[size_]);
+  std::shared_ptr<NumType[]> buffer = std::make_shared<NumType[]>(size_);
 
   for (size_t i; i < n_rows_; i++) {
     for (size_t j; j < n_cols_; j++) {

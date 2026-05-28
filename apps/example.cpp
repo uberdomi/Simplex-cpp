@@ -1,6 +1,7 @@
 #include "linalg/core/matrix.hpp"
 
 #include <iostream>
+#include <string>
 
 // ./build/bin/example_app
 
@@ -28,8 +29,25 @@ int main(int argc, char **argv) {
   matrix5.print();
 
   // Print the transposed matrices
-  matrix1.transpose().print();
-  matrix3.transpose().print();
+  std::cout << "Transposed matrices and their presumed shapes: " << std::endl;
+  auto t1 = matrix1.transpose();
+  t1.print();
+  std::cout << "T1 : (" << std::to_string(t1.get_n_rows()) << ","
+            << std::to_string(t1.get_n_cols()) << ")" << std::endl;
+
+  auto t3 = matrix1.transpose();
+  t3.print();
+  std::cout << "T3 : (" << std::to_string(t3.get_n_rows()) << ","
+            << std::to_string(t3.get_n_cols()) << ")" << std::endl;
+
+  // Check the originals again
+  matrix1.print();
+  std::cout << "M1 : (" << std::to_string(matrix1.get_n_rows()) << ","
+            << std::to_string(matrix1.get_n_cols()) << ")" << std::endl;
+
+  matrix3.print();
+  std::cout << "M3 : (" << std::to_string(matrix3.get_n_rows()) << ","
+            << std::to_string(matrix3.get_n_cols()) << ")" << std::endl;
 
   return 0;
   //   // --- Deprecated examples ---
