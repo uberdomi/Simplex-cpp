@@ -111,6 +111,11 @@ std::pair<std::size_t, std::size_t> Matrix2D<NumType>::get_strides() {
   return {stride_rows_, stride_cols_};
 }
 
+template <typename NumType>
+std::shared_ptr<const NumType[]> Matrix2D<NumType>::get_raw_data() {
+  return data_;
+}
+
 // --- Further functionalities ---
 
 template <typename NumType> void Matrix2D<NumType>::print() {

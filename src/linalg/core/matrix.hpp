@@ -1,5 +1,5 @@
-#ifndef _LINALG
-#define _LINALG
+#ifndef _LINALG_MATRIX
+#define _LINALG_MATRIX
 
 #include <cstddef> // for std::size_t
 #include <memory>  // for pointers
@@ -52,6 +52,8 @@ public:
   std::pair<std::size_t, std::size_t> get_shape();
   std::pair<std::size_t, std::size_t> get_strides();
 
+  std::shared_ptr<const NumType[]> get_raw_data();
+
   // --- Further functionalities ---
   void print();
 };
@@ -68,4 +70,4 @@ Matrix2D<double> eye(std::size_t length);
 
 } // namespace la
 
-#endif // _LINALG
+#endif // _LINALG_MATRIX

@@ -1,13 +1,17 @@
 #include "linalg/core/matrix.hpp"
+#include "linalg/ops/basic.hpp"
 
 #include <iostream>
 #include <string>
+#include <vector>
 
 // ./build/bin/example_app
 
 int main(int argc, char **argv) {
 
   std::cout << "Hello world! This is an example executable." << std::endl;
+
+  // --- Matrix instantiations ---
 
   std::size_t n_rows = 3;
   std::size_t n_cols = 4;
@@ -48,6 +52,30 @@ int main(int argc, char **argv) {
   matrix3.print();
   std::cout << "M3 : (" << std::to_string(matrix3.get_n_rows()) << ","
             << std::to_string(matrix3.get_n_cols()) << ")" << std::endl;
+
+  // --- Basic operations ---
+  auto A1 = la::Matrix2D<int>(
+      std::vector<std::vector<int>>{{1, 2, 3}, {4, 5, 6}, {6, 6, 7}});
+
+  auto A2 = la::Matrix2D<int>(
+      std::vector<std::vector<int>>{{2, 1, 3}, {7, 6, 9}, {0, 0, 1}});
+
+  auto v1 = std::vector<int>{1, 2, 3};
+  auto v2 = std::vector<int>{1, 1, 2};
+
+  std::cout << "--- A1 ---" << std::endl;
+  A1.print();
+  std::cout << "--- A2 ---" << std::endl;
+  A2.print();
+
+  std::cout << "--- v1 ---" << std::endl;
+  la::print(v1);
+  std::cout << "--- v2 ---" << std::endl;
+  la::print(v2);
+
+  // Vector operations
+  std::cout << "--- v1 + v2 ---" << std::endl;
+  la::print(v1 + v2);
 
   return 0;
   //   // --- Deprecated examples ---
