@@ -1,15 +1,15 @@
 #include "basic.hpp"
 
-#include <algorithm>  // std::transform
-#include <functional> // std::plus and other operations
+#include <algorithm> // std::transform
 #include <iostream>
 #include <numeric> // std::accumulate
+#include <span>    // for std::span
 #include <stdexcept>
 
 namespace la {
 // --- Vector operations ---
 
-template <typename NumType> void print(const std::vector<NumType> &v) {
+void print(const std::vector<double> &v) {
   for (const auto &x : v) {
     std::cout << x << ", ";
   }
@@ -17,9 +17,9 @@ template <typename NumType> void print(const std::vector<NumType> &v) {
 }
 
 // Checks
-template <typename NumType>
-void check_dimensions(const std::vector<NumType> &v_left,
-                      const std::vector<NumType> &v_right) {
+
+void check_dimensions(const std::vector<double> &v_left,
+                      const std::vector<double> &v_right) {
   if (v_left.size() != v_right.size()) {
     throw std::runtime_error(
         "Incompatible vector dimensions: " + std::to_string(v_left.size()) +
@@ -32,82 +32,79 @@ void check_dimensions(const std::vector<NumType> &v_left,
 }
 //   Operators
 
-template <typename NumType>
-std::vector<NumType> operator+(const std::vector<NumType> &v_left,
-                               const std::vector<NumType> &v_right) {
+std::vector<double> add(const std::vector<double> &v_left,
+                        const std::vector<double> &v_right) {
   check_dimensions(v_left, v_right);
-  std::vector<NumType> buffer = std::vector<NumType>(v_left.size(), NumType{});
+  std::vector<double> buffer = std::vector<double>(v_left.size(), 0.0);
 
   std::transform(v_left.begin(), v_left.end(), v_right.begin(), buffer.begin(),
-                 [](NumType left, NumType right) { return left + right; });
+                 [](double left, double right) { return left + right; });
 
   return buffer;
 }
 
-template <typename NumType>
-std::vector<NumType> operator-(const std::vector<NumType> &v_left,
-                               const std::vector<NumType> &v_right) {
+std::vector<double> sub(const std::vector<double> &v_left,
+                        const std::vector<double> &v_right) {
   check_dimensions(v_left, v_right);
 
-  std::vector<NumType> buffer = std::vector<NumType>(v_left.size(), NumType{});
+  std::vector<double> buffer = std::vector<double>(v_left.size(), 0.0);
 
   std::transform(v_left.begin(), v_left.end(), v_right.begin(), buffer.begin(),
-                 [](NumType left, NumType right) { return left - right; });
+                 [](double left, double right) { return left - right; });
 
   return buffer;
 }
-template <typename NumType>
-std::vector<NumType> operator*(const std::vector<NumType> &v_left,
-                               const std::vector<NumType> &v_right) {
+
+std::vector<double> mult(const std::vector<double> &v_left,
+                         const std::vector<double> &v_right) {
   check_dimensions(v_left, v_right);
 
-  std::vector<NumType> buffer = std::vector<NumType>(v_left.size(), NumType{});
+  std::vector<double> buffer = std::vector<double>(v_left.size(), 0.0);
 
   std::transform(v_left.begin(), v_left.end(), v_right.begin(), buffer.begin(),
-                 [](NumType left, NumType right) { return left * right; });
+                 [](double left, double right) { return left * right; });
 
   return buffer;
 }
 
 //  Functions
 
-template <typename NumType>
-NumType dot(const std::vector<NumType> &v_left,
-            const std::vector<NumType> &v_right) {
+double dot(const std::vector<double> &v_left,
+           const std::vector<double> &v_right) {
   check_dimensions(v_left, v_right);
 
   size_t idx{0};
 
-  NumType result = std::accumulate(v_left.begin(), v_left.end(), NumType{},
-                                   [&v_right, &idx](NumType agg, NumType val) {
-                                     return agg + val * v_right[idx++];
-                                   });
+  double result = std::accumulate(v_left.begin(), v_left.end(), 0.0,
+                                  [&v_right, &idx](double agg, double val) {
+                                    return agg + val * v_right[idx++];
+                                  });
 
   return result;
 }
 
-template <typename NumType>
-Matrix2D<NumType> dyadic(const std::vector<NumType> &v_left,
-                         const std::vector<NumType> &v_right) {
+Matrix2D dyadic(const std::vector<double> &v_left,
+                const std::vector<double> &v_right) {
   if (v_left.empty()) {
     throw std::runtime_error("Left vector is empty!");
   }
-  auto outer_vector = std::vector<std::vector<NumType>>{
-      v_left.size(), std::vector<NumType>{v_right.size(), NumType{}}};
+  std::vector<std::vector<double>> outer_vector =
+      std::vector<std::vector<double>>{
+          v_left.size(), std::vector<double>(v_right.size(), 0.0)};
   for (size_t idx_left = 0; idx_left < v_left.size(); idx_left++) {
     for (size_t idx_right = 0; idx_right < v_right.size(); idx_right++) {
       outer_vector[idx_left][idx_right] = v_left[idx_left] * v_right[idx_right];
     }
   }
 
-  return Matrix2D<NumType>(outer_vector);
+  return Matrix2D(outer_vector);
 }
 
 //  --- Matrix operations ---
 // Checks
-template <typename NumType>
-void check_dimensions(const Matrix2D<NumType> &m_left,
-                      const Matrix2D<NumType> &m_right, uint dim) {
+
+void check_dimensions(const Matrix2D &m_left, const Matrix2D &m_right,
+                      uint dim) {
   switch (dim) {
   case 0: {
     if (m_left.get_n_rows() != m_right.get_n_rows()) {
@@ -128,9 +125,9 @@ void check_dimensions(const Matrix2D<NumType> &m_left,
   default: {
     if (m_left.get_n_cols() != m_right.get_n_cols() &&
         m_left.get_n_rows() != m_right.get_n_rows()) {
-      throw std::runtime_error("Incompatible matrix dimensions: " +
-                               std::to_string(m_left.get_shape()) + " vs " +
-                               std::to_string(m_right.get_shape()));
+      throw std::runtime_error(
+          "Incompatible matrix dimensions: " + m_left.shape_str() + " vs " +
+          m_right.shape_str());
     }
     break;
   }
@@ -139,18 +136,21 @@ void check_dimensions(const Matrix2D<NumType> &m_left,
 }
 
 // Dimensional operations
-template <typename NumType> NumType sum(const Matrix2D<NumType> &A, uint dim) {
-  auto raw_data = A.get_raw_data;
+double sum(const Matrix2D &A, uint dim) {
+  std::shared_ptr<const double[]> raw_data = A.get_raw_data();
+  size_t data_size = A.get_size();
+
+  std::span<const double> data_view(raw_data.get(), data_size);
+
   // Works cause whole data vector contiguous in memory - parts of it not
   // guaranteed! (vide A.transpose())
-  NumType agg = std::accumulate(std::begin(raw_data), std::end(raw_data),
-                                NumType{}, std::plus<NumType>{});
+  double agg = std::accumulate(std::begin(data_view), std::end(data_view), 0.0);
+
+  return agg;
 }
 
-template <typename NumType>
-inline std::vector<NumType> row_sum(const Matrix2D<NumType> &A) {
-  std::vector<NumType> agg_vec =
-      std::vector<NumType>{A.get_n_cols(), NumType{}};
+inline std::vector<double> row_sum(const Matrix2D &A) {
+  std::vector<double> agg_vec = std::vector<double>(A.get_n_cols(), 0.0);
 
   for (size_t idx_row = 0; idx_row < A.get_n_rows(); idx_row++) {
     for (size_t idx_col = 0; idx_col < A.get_n_cols(); idx_col++) {
@@ -161,10 +161,8 @@ inline std::vector<NumType> row_sum(const Matrix2D<NumType> &A) {
   return agg_vec;
 }
 
-template <typename NumType>
-inline std::vector<NumType> col_sum(const Matrix2D<NumType> &A) {
-  std::vector<NumType> agg_vec =
-      std::vector<NumType>{A.get_n_cols(), NumType{}};
+inline std::vector<double> col_sum(const Matrix2D &A) {
+  std::vector<double> agg_vec = std::vector<double>(A.get_n_cols(), 0.0);
 
   for (size_t idx_col = 0; idx_col < A.get_n_cols(); idx_col++) {
     for (size_t idx_row = 0; idx_row < A.get_n_rows(); idx_row++) {

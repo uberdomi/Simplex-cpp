@@ -5,6 +5,9 @@
 #include <string>
 #include <vector>
 
+// Compile
+// cmake --build build --target example_app --
+// Run
 // ./build/bin/example_app
 
 int main(int argc, char **argv) {
@@ -16,15 +19,15 @@ int main(int argc, char **argv) {
   std::size_t n_rows = 3;
   std::size_t n_cols = 4;
 
-  la::Matrix2D<double> matrix1 = la::zeros(n_rows, n_cols);
+  la::Matrix2D matrix1 = la::zeros(n_rows, n_cols);
 
-  la::Matrix2D<double> matrix2 = la::zeros(n_rows);
+  la::Matrix2D matrix2 = la::zeros(n_rows);
 
-  la::Matrix2D<double> matrix3 = la::ones(n_rows, n_cols);
+  la::Matrix2D matrix3 = la::ones(n_rows, n_cols);
 
-  la::Matrix2D<double> matrix4 = la::ones(n_rows);
+  la::Matrix2D matrix4 = la::ones(n_rows);
 
-  la::Matrix2D<double> matrix5 = la::eye(n_rows);
+  la::Matrix2D matrix5 = la::eye(n_rows);
 
   matrix1.print();
   matrix2.print();
@@ -54,14 +57,14 @@ int main(int argc, char **argv) {
             << std::to_string(matrix3.get_n_cols()) << ")" << std::endl;
 
   // --- Basic operations ---
-  auto A1 = la::Matrix2D<int>(
-      std::vector<std::vector<int>>{{1, 2, 3}, {4, 5, 6}, {6, 6, 7}});
+  auto A1 = la::Matrix2D(
+      std::vector<std::vector<double>>{{1, 2, 3}, {4, 5, 6}, {6, 6, 7}});
 
-  auto A2 = la::Matrix2D<int>(
-      std::vector<std::vector<int>>{{2, 1, 3}, {7, 6, 9}, {0, 0, 1}});
+  auto A2 = la::Matrix2D(
+      std::vector<std::vector<double>>{{2, 1, 3}, {7, 6, 9}, {0, 0, 1}});
 
-  auto v1 = std::vector<int>{1, 2, 3};
-  auto v2 = std::vector<int>{1, 1, 2};
+  auto v1 = std::vector<double>{1, 2, 3};
+  auto v2 = std::vector<double>{1, 1, 2};
 
   std::cout << "--- A1 ---" << std::endl;
   A1.print();
@@ -75,7 +78,19 @@ int main(int argc, char **argv) {
 
   // Vector operations
   std::cout << "--- v1 + v2 ---" << std::endl;
-  la::print(v1 + v2);
+  la::print(la::add(v1, v2));
+
+  std::cout << "--- v1 - v2 ---" << std::endl;
+  la::print(la::sub(v1, v2));
+
+  std::cout << "--- v1 * v2 ---" << std::endl;
+  la::print(la::mult(v1, v2));
+
+  std::cout << "--- <v1, v2> ---" << std::endl;
+  std::cout << std::to_string(la::dot(v1, v2)) << std::endl;
+
+  std::cout << "--- outer(v1, v2) ---" << std::endl;
+  la::dyadic(v1, v2).print();
 
   return 0;
   //   // --- Deprecated examples ---
