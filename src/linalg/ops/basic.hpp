@@ -36,11 +36,9 @@ void check_dimensions(const Matrix2D &m_left, const Matrix2D &m_right,
 // Dimensional operations
 double sum(const Matrix2D &A);
 
-inline std::vector<double> row_sum(const Matrix2D &A);
+std::vector<double> row_sum(const Matrix2D &A);
 
-inline std::vector<double> col_sum(const Matrix2D &A);
-
-Matrix2D concat(const Matrix2D &m_left, const Matrix2D &m_right, uint dim = 0);
+std::vector<double> col_sum(const Matrix2D &A);
 
 // Matrix-vector
 
@@ -53,6 +51,16 @@ Matrix2D operator+(const Matrix2D &m_left, const Matrix2D &m_right);
 Matrix2D operator-(const Matrix2D &m_left, const Matrix2D &m_right);
 
 Matrix2D operator*(const Matrix2D &m_left, const Matrix2D &m_right);
+
+// Derived matrices
+
+// TODO implement a new matrix class that supports storing pointers to multiple
+// *data_* objects
+// -> Piecewise contiguous
+Matrix2D concat(const Matrix2D &m_left, const Matrix2D &m_right, uint dim = 0);
+
+Matrix2D slice(const Matrix2D &A, int row_lb = 0, int row_ub = 0,
+               int col_lb = 0, int col_ub = 0);
 
 } // namespace la
 #endif // _LINALG_BASIC

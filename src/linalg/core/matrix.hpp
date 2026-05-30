@@ -29,19 +29,17 @@ public:
 
   Matrix2D(std::vector<std::vector<double>> inputs);
 
-private:
   // Constructing a matrix from the same underlying data *without copying*
   Matrix2D(std::shared_ptr<const double[]> shared_data, std::size_t n_rows,
            std::size_t n_cols);
 
-public:
   // --- Stride operations ---
 
   // Raw access - no bounds checking
-  inline double operator()(std::size_t row, std::size_t col) const;
+  double operator()(std::size_t row, std::size_t col) const;
 
   // Civilized access with bound checking
-  inline double at(std::size_t row, std::size_t col) const;
+  double at(std::size_t row, std::size_t col) const;
 
   Matrix2D transpose();
 

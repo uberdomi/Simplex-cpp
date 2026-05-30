@@ -66,11 +66,6 @@ int main(int argc, char **argv) {
   auto v1 = std::vector<double>{1, 2, 3};
   auto v2 = std::vector<double>{1, 1, 2};
 
-  std::cout << "--- A1 ---" << std::endl;
-  A1.print();
-  std::cout << "--- A2 ---" << std::endl;
-  A2.print();
-
   std::cout << "--- v1 ---" << std::endl;
   la::print(v1);
   std::cout << "--- v2 ---" << std::endl;
@@ -91,6 +86,45 @@ int main(int argc, char **argv) {
 
   std::cout << "--- outer(v1, v2) ---" << std::endl;
   la::dyadic(v1, v2).print();
+
+  // Matrix operations
+  std::cout << "--- A1 ---" << std::endl;
+  A1.print();
+  std::cout << "--- A2 ---" << std::endl;
+  A2.print();
+
+  std::cout << "--- sum(A1) = " + std::to_string(la::sum(A1)) + " ---"
+            << std::endl;
+
+  std::cout << "--- sum(A2) = " + std::to_string(la::sum(A2)) + " ---"
+            << std::endl;
+
+  std::cout << "--- row_sum(A1) ---" << std::endl;
+  la::print(la::row_sum(A1));
+
+  std::cout << "--- row_sum(A2) ---" << std::endl;
+  la::print(la::row_sum(A2));
+
+  std::cout << "--- col_sum(A1) ---" << std::endl;
+  la::print(la::col_sum(A1));
+
+  std::cout << "--- col_sum(A2) ---" << std::endl;
+  la::print(la::col_sum(A2));
+
+  std::cout << "--- A1 * v1 ---" << std::endl;
+  la::print(A1 * v1);
+
+  std::cout << "--- A2 * v2 ---" << std::endl;
+  la::print(A2 * v2);
+
+  std::cout << "--- A1 + A2 ---" << std::endl;
+  (A1 + A2).print();
+
+  std::cout << "--- A1 - A2 ---" << std::endl;
+  (A1 - A2).print();
+
+  std::cout << "--- A1 * A2 ---" << std::endl;
+  (A1 * A2).print();
 
   return 0;
   //   // --- Deprecated examples ---

@@ -136,11 +136,10 @@ void check_dimensions(const Matrix2D &m_left, const Matrix2D &m_right,
 }
 
 // Dimensional operations
-double sum(const Matrix2D &A, uint dim) {
-  std::shared_ptr<const double[]> raw_data = A.get_raw_data();
-  size_t data_size = A.get_size();
 
-  std::span<const double> data_view(raw_data.get(), data_size);
+double sum(const Matrix2D &A) {
+
+  std::span<const double> data_view(A.get_raw_data().get(), A.get_size());
 
   // Works cause whole data vector contiguous in memory - parts of it not
   // guaranteed! (vide A.transpose())
@@ -149,8 +148,8 @@ double sum(const Matrix2D &A, uint dim) {
   return agg;
 }
 
-inline std::vector<double> row_sum(const Matrix2D &A) {
-  std::vector<double> agg_vec = std::vector<double>(A.get_n_cols(), 0.0);
+std::vector<double> row_sum(const Matrix2D &A) {
+  std::vector<double> agg_vec = std::vector<double>(A.get_n_rows(), 0.0);
 
   for (size_t idx_row = 0; idx_row < A.get_n_rows(); idx_row++) {
     for (size_t idx_col = 0; idx_col < A.get_n_cols(); idx_col++) {
@@ -161,7 +160,7 @@ inline std::vector<double> row_sum(const Matrix2D &A) {
   return agg_vec;
 }
 
-inline std::vector<double> col_sum(const Matrix2D &A) {
+std::vector<double> col_sum(const Matrix2D &A) {
   std::vector<double> agg_vec = std::vector<double>(A.get_n_cols(), 0.0);
 
   for (size_t idx_col = 0; idx_col < A.get_n_cols(); idx_col++) {
@@ -171,6 +170,85 @@ inline std::vector<double> col_sum(const Matrix2D &A) {
   }
 
   return agg_vec;
+}
+
+// Matrix-vector
+
+std::vector<double> operator*(const Matrix2D &A, const std::vector<double> &v) {
+  if (A.get_n_cols() != v.size()) {
+    throw std::runtime_error("Incompatible matrix-vector dimensions: " +
+                             std::to_string(A.get_n_cols()) + " vs " +
+                             std::to_string(v.size()));
+  }
+
+  std::vector<double> result(A.get_n_rows(), 0.0);
+
+  for (size_t idx_row = 0; idx_row < A.get_n_rows(); idx_row++) {
+    for (size_t idx_col = 0; idx_col < A.get_n_cols(); idx_col++) {
+      result[idx_row] += A(idx_row, idx_col) * v[idx_col];
+    }
+  }
+
+  return result;
+}
+
+// Matrix-matrix
+
+Matrix2D operator+(const Matrix2D &m_left, const Matrix2D &m_right) {
+  check_dimensions(m_left, m_right, 2);
+
+  std::shared_ptr<double[]> buffer =
+      std::shared_ptr<double[]>(new double[m_left.get_size()]{});
+
+  std::size_t stride_row = m_left.get_n_cols();
+
+  for (std::size_t idx_row = 0; idx_row < m_left.get_n_rows(); idx_row++) {
+    for (std::size_t idx_col = 0; idx_col < m_left.get_n_cols(); idx_col++) {
+      // Perform the operation
+      buffer[idx_row * stride_row + idx_col] =
+          m_left(idx_row, idx_col) + m_right(idx_row, idx_col);
+    }
+  }
+
+  return Matrix2D(buffer, m_left.get_n_rows(), m_left.get_n_cols());
+}
+
+Matrix2D operator-(const Matrix2D &m_left, const Matrix2D &m_right) {
+  check_dimensions(m_left, m_right, 2);
+
+  std::shared_ptr<double[]> buffer =
+      std::shared_ptr<double[]>(new double[m_left.get_size()]{});
+
+  std::size_t stride_row = m_left.get_n_cols();
+
+  for (std::size_t idx_row = 0; idx_row < m_left.get_n_rows(); idx_row++) {
+    for (std::size_t idx_col = 0; idx_col < m_left.get_n_cols(); idx_col++) {
+      // Perform the operation
+      buffer[idx_row * stride_row + idx_col] =
+          m_left(idx_row, idx_col) - m_right(idx_row, idx_col);
+    }
+  }
+
+  return Matrix2D(buffer, m_left.get_n_rows(), m_left.get_n_cols());
+}
+
+Matrix2D operator*(const Matrix2D &m_left, const Matrix2D &m_right) {
+  check_dimensions(m_left, m_right, 2);
+
+  std::shared_ptr<double[]> buffer =
+      std::shared_ptr<double[]>(new double[m_left.get_size()]{});
+
+  std::size_t stride_row = m_left.get_n_cols();
+
+  for (std::size_t idx_row = 0; idx_row < m_left.get_n_rows(); idx_row++) {
+    for (std::size_t idx_col = 0; idx_col < m_left.get_n_cols(); idx_col++) {
+      // Perform the operation
+      buffer[idx_row * stride_row + idx_col] =
+          m_left(idx_row, idx_col) * m_right(idx_row, idx_col);
+    }
+  }
+
+  return Matrix2D(buffer, m_left.get_n_rows(), m_left.get_n_cols());
 }
 
 } // namespace la

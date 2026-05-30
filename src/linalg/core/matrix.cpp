@@ -13,7 +13,7 @@ namespace la {
 Matrix2D::Matrix2D(std::size_t n_rows, std::size_t n_cols)
     : n_rows_(n_rows), n_cols_(n_cols), stride_rows_(n_cols), stride_cols_(1),
       size_(n_rows * n_cols),
-      data_(std::make_shared<double[]>(n_rows * n_cols)) {}
+      data_(std::shared_ptr<double[]>(new double[n_rows * n_cols]{})) {}
 
 // Matrix from a 2D vector
 Matrix2D::Matrix2D(std::vector<std::vector<double>> inputs) {
@@ -44,7 +44,8 @@ Matrix2D::Matrix2D(std::vector<std::vector<double>> inputs) {
   }
 
   // Populate the underlying data
-  std::shared_ptr<double[]> buffer_ptr = std::make_shared<double[]>(size_);
+  std::shared_ptr<double[]> buffer_ptr =
+      std::shared_ptr<double[]>(new double[size_]{});
 
   // auto buffer = buffer_ptr.get();
 
@@ -65,11 +66,11 @@ Matrix2D::Matrix2D(std::shared_ptr<const double[]> shared_data,
       size_(n_rows * n_cols), data_(std::move(shared_data)) {}
 
 // --- Stride operations ---
-inline double Matrix2D::operator()(std::size_t row, std::size_t col) const {
+double Matrix2D::operator()(std::size_t row, std::size_t col) const {
   return data_[row * stride_rows_ + col * stride_cols_];
 }
 
-inline double Matrix2D::at(std::size_t row, std::size_t col) const {
+double Matrix2D::at(std::size_t row, std::size_t col) const {
   //   With bounds checking
   size_t index = row * stride_rows_ + col * stride_cols_;
   if (index >= size_ || index < 0) {
@@ -100,8 +101,7 @@ std::shared_ptr<const double[]> Matrix2D::get_raw_data() const { return data_; }
 
 // --- Further functionalities ---
 void Matrix2D::print() const {
-  std::cout << "--- matrix2d (" << n_rows_ << "," << n_cols_ << ")"
-            << std::endl;
+  std::cout << "--- matrix2d " << shape_str() << std::endl;
   for (std::size_t row = 0; row < n_rows_; row++) {
     std::cout << "[ ";
     for (std::size_t col = 0; col < n_cols_; col++) {
